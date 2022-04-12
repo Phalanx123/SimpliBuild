@@ -29,4 +29,4 @@ jobs:
       with:
           # Filepath of the project to be packaged, relative to root of repository
           PROJECT_FILE_PATH: SimpliBuild/simpliBuild.csproj
-      NUGET_KEY: ${{secrets.NUGET_API_KEY}} 
+          NUGET_API_KEY: ${{secrets.NUGET_API_KEY}} 
