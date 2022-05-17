@@ -13,7 +13,7 @@ namespace simpliBuild.SWMS.Model
         /// Project ID
         /// </summary>
         [JsonPropertyName("id")] 
-        public string? Id { get; set; }
+        public Guid? Id { get; set; }
 
         /// <summary>
         /// Project Name/Description
@@ -65,9 +65,21 @@ namespace simpliBuild.SWMS.Model
         public string? Code { get; set; }
 
         /// <summary>
+        /// Who archived the project
+        /// </summary>
+        [JsonPropertyName("archivedBy")]
+        public Guid? ArchivedBy { get; set; }
+
+        /// <summary>
         /// ID of the organisation that created it
         /// </summary>
         [JsonPropertyName("organisationId")] 
         public string? OrganisationID { get; set; }
+
+        /// <summary>
+        /// SWMS relating to this project
+        /// </summary>
+                [JsonPropertyName("swms")]
+        public IEnumerable<SimpliSWMS>? SWMS { get; set; }
     }
 }

@@ -36,10 +36,15 @@ namespace simpliBuild.SWMS.Model
         [JsonPropertyName("workerSWMS")]
         public List<SimpliWorkerSWMS>? WorkerSWMS { get; set; }
 
-        [JsonConstructor]
+      
         public SimpliWorker(string id)
         {
             (Id) = (id);
+        }
+        [JsonConstructor]
+        public SimpliWorker()
+        {
+            
         }
     }
 

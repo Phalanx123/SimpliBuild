@@ -25,6 +25,11 @@ namespace simpliBuild.SWMS.Model
     {        
         [JsonPropertyName("data")] public SimpliWorker Worker { get; set; }
     }
+    public class SimpliWorkerInvitedToSwmsResponse : SimpliResponse
+    {
+        [JsonPropertyName("data")]
+        public Data Data { get; set; }
+    }
 
     public class SimpliWorkersResponse : SimpliResponse
     {
@@ -52,5 +57,14 @@ namespace simpliBuild.SWMS.Model
 
         [JsonPropertyName("details")] 
         public string Details { get; set; }
+    }
+
+    public class Data
+    {
+        /// <summary>
+        /// Update Successful
+        /// </summary>
+       [JsonPropertyName("isSuccess")]
+        public bool IsSuccessful { get; set; }
     }
 }

@@ -38,5 +38,7 @@ namespace simpliBuild.SWMS.Model
         /// </summary>
         [JsonPropertyName("revision")]
         public int Revision { get; set; }
+
+       
     }
 }
