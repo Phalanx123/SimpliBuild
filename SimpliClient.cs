@@ -20,7 +20,7 @@ public class SimpliClient
     private readonly string ApiSecret;
     private readonly string? OrganisationalID;
     private readonly string Api;
-    private static SimpliAccessToken? _token;
+    public SimpliAccessToken? AccessToken;
 
     public static RestClient Client { get; set; }
          = new RestClient(@"https://api-prod.simpliswms.com.au/swms-api/v1/");
@@ -50,27 +50,27 @@ public class SimpliClient
     }
     public async Task GetAuthTokenAsync()
     {
-        if (_token == null)
+        if (AccessToken == null || AccessToken.HasExpired)
         {
             var request = new RestRequest("/oauth/token", Method.Post).AddHeader("Authorization", Api);
 
             var result = await Client.ExecuteAsync<SimpliAccessToken>(request);
 
-            _token = result.Data;
+            AccessToken = result.Data;
         }
-
+        if (AccessToken == null)
+            throw new AccessViolationException("No SimpliSWMS token received");
     }
 
 
     public async Task<SimpliWorkerCreatedResponse?> CreateWorker(SimpliWorker simpliWorker)
     {
-        if (_token == null || DateTime.Now >= _token?.ExpireTime)
-            await GetAuthTokenAsync();
-        if (_token == null)
-            throw new AccessViolationException();
+
+        await GetAuthTokenAsync();
+
 
         var request = new RestRequest("workers", Method.Post);
-        request.AddHeader("authorization", _token.AccessToken);
+        request.AddHeader("authorization", AccessToken.AccessToken);
         request.AddJsonBody(
             new
             {
@@ -105,15 +105,13 @@ public class SimpliClient
     /// <exception cref="AccessViolationException"></exception>
     public async Task<SimpliWorkersResponse?> GetWorkers(bool includeSWMS = false, string id = "", string? keyword = default, string[]? attributes = default, int offset = 0, int limit = 100)
     {
-        if (_token == null || DateTime.Now >= _token?.ExpireTime)
-            await GetAuthTokenAsync();
 
-        if (_token == null)
-            throw new Exception("Could not get Token");
+        await GetAuthTokenAsync();
+
 
 
         var request = new RestRequest("workers", Method.Get);
-        request.AddHeader("authorization", _token.AccessToken);
+        request.AddHeader("authorization", AccessToken!.AccessToken);
 
         if (!string.IsNullOrWhiteSpace(id))
             request.AddQueryParameter("id", id);
@@ -145,11 +143,8 @@ public class SimpliClient
     /// <exception cref="ArgumentException">Action is invalid</exception>
     public async Task<SimpliPerformActionOnSWMSWorkerResponse> PerformActionOnWorker(string swmsId, string workerId, SWMSWorkerAction action)
     {
+        await GetAuthTokenAsync();
 
-        if (_token == null || DateTime.Now >= _token?.ExpireTime)
-            await GetAuthTokenAsync();
-        if (_token == null)
-            throw new AccessViolationException();
         string? selectedAction;
         if (action == SWMSWorkerAction.Activate)
             selectedAction = "activate";
@@ -161,7 +156,7 @@ public class SimpliClient
             throw new ArgumentException(nameof(action));
 
         var request = new RestRequest($"swms/{swmsId}/{workerId}", Method.Post);
-        request.AddHeader("authorization", _token.AccessToken);
+        request.AddHeader("authorization", AccessToken!.AccessToken);
         request.AddQueryParameter("action", selectedAction);
 
 
@@ -178,24 +173,19 @@ public class SimpliClient
     /// <exception cref="AccessViolationException">Issue with token</exception>
     public async Task<SimpliProjectResponse?> GetProject(Guid projectId, bool includeSWMS = false, bool includeArchived = false)
     {
-
-        if (_token == null || DateTime.Now >= _token?.ExpireTime)
-            await GetAuthTokenAsync();
-        if (_token == null)
-            throw new AccessViolationException();
-
+        await GetAuthTokenAsync();
         var request = new RestRequest($"projects/{projectId.ToString()}", Method.Get);
-        request.AddHeader("authorization", _token.AccessToken);
+        request.AddHeader("authorization", AccessToken.AccessToken);
         if (includeSWMS)
             request.AddQueryParameter(nameof(includeSWMS), true);
         var result = await Client.ExecuteAsync(request);
         if (result.StatusCode == HttpStatusCode.NotFound)
             return null;
         var serialResult = JsonSerializer.Deserialize<SimpliProjectResponse>(result.Content);
-        if (!includeArchived && serialResult?.Project?.SWMS!=null)
+        if (!includeArchived && serialResult?.Project?.SWMS != null)
             serialResult.Project.SWMS = serialResult.Project.SWMS.Where(x => x.Status != "Archived");
-            return serialResult;
-        
+        return serialResult;
+
 
     }
 
@@ -207,13 +197,10 @@ public class SimpliClient
     public async Task<SimpliProjectResponse?> CreateProject(SimpliProject simpliProject)
     {
 
+        await GetAuthTokenAsync();
 
-        if (_token == null || DateTime.Now >= _token?.ExpireTime)
-            await GetAuthTokenAsync();
-        if (_token == null)
-            throw new AccessViolationException();
         var request = new RestRequest("projects", Method.Post);
-        request.AddHeader("authorization", _token.AccessToken);
+        request.AddHeader("authorization", AccessToken.AccessToken);
         request.AddJsonBody(
             new
             {
@@ -239,12 +226,9 @@ public class SimpliClient
 
     public async Task<bool> InviteWorkerToSWMS(string swmsId, string workerId, bool sendInvitation = false)
     {
-        if (_token == null || DateTime.Now >= _token?.ExpireTime)
-            await GetAuthTokenAsync();
-        if (_token == null)
-            throw new AccessViolationException();
+        await GetAuthTokenAsync();
         var request = new RestRequest($"swms/{swmsId}/invite", Method.Put);
-        request.AddHeader("authorization", _token.AccessToken);
+        request.AddHeader("authorization", AccessToken.AccessToken);
         request.AddQueryParameter(nameof(workerId), workerId);
         request.AddQueryParameter(nameof(sendInvitation), sendInvitation);
 

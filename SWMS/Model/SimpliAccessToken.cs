@@ -46,7 +46,7 @@ namespace simpliBuild.SWMS.Model
         //[JsonPropertyName("ExpiresTime")] 
         public DateTime ExpireTime { get; private set; }
 
-        public bool HasExpired => ExpireTime >= DateTime.Now;
+        public bool HasExpired => ExpireTime <= DateTime.Now;
 
     }
 }
