@@ -174,8 +174,8 @@ public class SimpliClient
     public async Task<SimpliProjectResponse?> GetProject(Guid projectId, bool includeSWMS = false, bool includeArchived = false)
     {
         await GetAuthTokenAsync();
-        var request = new RestRequest($"projects/{projectId.ToString()}", Method.Get);
-        request.AddHeader("authorization", AccessToken.AccessToken);
+        var request = new RestRequest($"/projects/{projectId.ToString()}", Method.Get);
+        request.AddHeader("authorization", AccessToken!.AccessToken);
         if (includeSWMS)
             request.AddQueryParameter(nameof(includeSWMS), true);
         var result = await Client.ExecuteAsync(request);
@@ -200,8 +200,9 @@ public class SimpliClient
         await GetAuthTokenAsync();
 
         var request = new RestRequest("projects", Method.Post);
-        request.AddHeader("authorization", AccessToken.AccessToken);
-        request.AddJsonBody(
+        request.AddHeader("authorization", AccessToken!.AccessToken);
+    
+          request.AddJsonBody(
             new
             {
                 name = simpliProject.Name,
@@ -213,9 +214,6 @@ public class SimpliClient
                 code = simpliProject.Code,
                 organisationId = simpliProject.OrganisationID
             });
-
-
-        //Adds the project
         var result = await Client.ExecuteAsync(request);
         SimpliProjectResponse? projectResponse = JsonSerializer.Deserialize<SimpliProjectResponse>(result.Content);
 
