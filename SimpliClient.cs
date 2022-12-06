@@ -232,6 +232,7 @@ public class SimpliClient
 
         //Adds the project
         var result = await Client.ExecuteAsync(request);
+        //TODO {"error":{"status":400,"code":"40002","message":"Workers is unknown","field":"Workers"}}
         SimpliWorkerInvitedToSwmsResponse? response = JsonSerializer.Deserialize<SimpliWorkerInvitedToSwmsResponse>(result.Content!);
         if (response!.Error != null)
             return false;
