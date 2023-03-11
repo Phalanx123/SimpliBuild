@@ -1,18 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace simpliBuild.SWMS.Model
 {
-  public class SimpliProject
+    public class SimpliProject
     {
         /// <summary>
         /// Project ID
         /// </summary>
-        [JsonPropertyName("id")] 
+        [JsonPropertyName("id")]
         public Guid? Id { get; set; }
 
         /// <summary>
@@ -24,38 +21,38 @@ namespace simpliBuild.SWMS.Model
         /// <summary>
         /// Project Address Line 1
         /// </summary>
-        [JsonPropertyName("address1")] 
+        [JsonPropertyName("address1")]
         public string? Address1 { get; set; }
 
         /// <summary>
         /// Project Address Line 2
         /// </summary>
-        [JsonPropertyName("address2")] 
+        [JsonPropertyName("address2")]
         public string? Address2 { get; set; }
 
         /// <summary>
         /// Project Suburb
         /// </summary>
 
-        [JsonPropertyName("suburb")] 
+        [JsonPropertyName("suburb")]
         public string? Suburb { get; set; }
 
         /// <summary>
         /// Project State
         /// </summary>
-        [JsonPropertyName("state")] 
+        [JsonPropertyName("state")]
         public string? State { get; set; }
 
         /// <summary>
         /// Project Postcode
         /// </summary>
-        [JsonPropertyName("postcode")] 
+        [JsonPropertyName("postcode")]
         public string? PostCode { get; set; }
 
         /// <summary>
         /// Date/Time project was created
         /// </summary>
-        [JsonPropertyName("createdAt")] 
+        [JsonPropertyName("createdAt")]
         public DateTime? CreatedAt { get; set; }
 
         /// <summary>
@@ -73,13 +70,13 @@ namespace simpliBuild.SWMS.Model
         /// <summary>
         /// ID of the organisation that created it
         /// </summary>
-        [JsonPropertyName("organisationId")] 
+        [JsonPropertyName("organisationId")]
         public string? OrganisationID { get; set; }
 
         /// <summary>
         /// SWMS relating to this project
         /// </summary>
-                [JsonPropertyName("swms")]
+        [JsonPropertyName("swms")]
         public IEnumerable<SimpliSWMS>? SWMS { get; set; }
     }
 }

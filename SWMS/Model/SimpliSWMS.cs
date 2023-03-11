@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
+﻿using System.Text.Json.Serialization;
 
 namespace simpliBuild.SWMS.Model
 {
@@ -39,6 +34,6 @@ namespace simpliBuild.SWMS.Model
         [JsonPropertyName("revision")]
         public int Revision { get; set; }
 
-       
+
     }
 }

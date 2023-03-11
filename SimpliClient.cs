@@ -1,17 +1,15 @@
 ﻿
 using RestSharp;
+using RestSharp.Serializers.Json;
 using simpliBuild.SWMS.Model;
 using System;
-using System.Collections.Generic;
+using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
-using RestSharp.Authenticators;
-using System.Net.Http;
 using System.Text.Json.Serialization;
-using RestSharp.Serializers.Json;
-using System.Linq;
+using System.Threading.Tasks;
 
 namespace simpliBuild;
 public class SimpliClient
@@ -201,19 +199,19 @@ public class SimpliClient
 
         var request = new RestRequest("projects", Method.Post);
         request.AddHeader("authorization", AccessToken!.AccessToken);
-    
-          request.AddJsonBody(
-            new
-            {
-                name = simpliProject.Name,
-                address1 = simpliProject.Address1,
-                address2 = simpliProject.Address2,
-                suburb = simpliProject.Suburb,
-                state = simpliProject.State,
-                postcode = simpliProject.PostCode,
-                code = simpliProject.Code,
-                organisationId = simpliProject.OrganisationID
-            });
+
+        request.AddJsonBody(
+          new
+          {
+              name = simpliProject.Name,
+              address1 = simpliProject.Address1,
+              address2 = simpliProject.Address2,
+              suburb = simpliProject.Suburb,
+              state = simpliProject.State,
+              postcode = simpliProject.PostCode,
+              code = simpliProject.Code,
+              organisationId = simpliProject.OrganisationID
+          });
         var result = await Client.ExecuteAsync(request);
         SimpliProjectResponse? projectResponse = JsonSerializer.Deserialize<SimpliProjectResponse>(result.Content);
 

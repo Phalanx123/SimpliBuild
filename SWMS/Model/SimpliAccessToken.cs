@@ -22,7 +22,7 @@ namespace simpliBuild.SWMS.Model
         /// <summary>
         /// The type of token
         /// </summary>
-        [JsonPropertyName("token_type")] 
+        [JsonPropertyName("token_type")]
         public string TokenType { get; set; }
 
 

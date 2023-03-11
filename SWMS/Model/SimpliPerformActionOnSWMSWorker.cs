@@ -1,13 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace simpliBuild.SWMS.Model
+﻿namespace simpliBuild.SWMS.Model
 {
-public class SimpliPerformActionOnSWMSWorker
+    public class SimpliPerformActionOnSWMSWorker
     {
-       public bool IsSuccessful { get; set; }
+        public bool IsSuccessful { get; set; }
     }
 }

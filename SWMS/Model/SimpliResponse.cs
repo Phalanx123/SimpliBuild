@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace simpliBuild.SWMS.Model
 {
@@ -22,7 +18,7 @@ namespace simpliBuild.SWMS.Model
     }
 
     public class SimpliWorkerCreatedResponse : SimpliResponse
-    {        
+    {
         [JsonPropertyName("data")] public SimpliWorker Worker { get; set; }
     }
     public class SimpliWorkerInvitedToSwmsResponse : SimpliResponse
@@ -41,21 +37,21 @@ namespace simpliBuild.SWMS.Model
     /// </summary>
     public class SimpliPerformActionOnSWMSWorkerResponse : SimpliResponse
     {
-        [JsonPropertyName("data")] public SimpliPerformActionOnSWMSWorker? PerformActionOnSWMSWorker { get;set;}
+        [JsonPropertyName("data")] public SimpliPerformActionOnSWMSWorker? PerformActionOnSWMSWorker { get; set; }
     }
 
     public class SimpliError
     {
-        [JsonPropertyName("status")] 
+        [JsonPropertyName("status")]
         public string Status { get; set; }
 
-        [JsonPropertyName("code")] 
+        [JsonPropertyName("code")]
         public string Code { get; set; }
 
-        [JsonPropertyName("message")] 
+        [JsonPropertyName("message")]
         public string Message { get; set; }
 
-        [JsonPropertyName("details")] 
+        [JsonPropertyName("details")]
         public string Details { get; set; }
     }
 
@@ -64,7 +60,7 @@ namespace simpliBuild.SWMS.Model
         /// <summary>
         /// Update Successful
         /// </summary>
-       [JsonPropertyName("isSuccess")]
+        [JsonPropertyName("isSuccess")]
         public bool IsSuccessful { get; set; }
     }
 }

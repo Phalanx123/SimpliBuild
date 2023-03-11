@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace simpliBuild.SWMS.Model
 {
@@ -36,7 +33,7 @@ namespace simpliBuild.SWMS.Model
         [JsonPropertyName("workerSWMS")]
         public List<SimpliWorkerSWMS>? WorkerSWMS { get; set; }
 
-      
+
         public SimpliWorker(string id)
         {
             (Id) = (id);
@@ -44,7 +41,7 @@ namespace simpliBuild.SWMS.Model
         [JsonConstructor]
         public SimpliWorker()
         {
-            
+
         }
     }
 
