@@ -22,7 +22,7 @@ public class SimpliClient
     private readonly string Api;
     private readonly ILogger _logger;
     public SimpliAccessToken? AccessToken;
-    private static SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
+    private static readonly SemaphoreSlim semaphore = new(1, 1);
     public static RestClient Client { get; set; }
          = new RestClient(@"https://api-prod.simpliswms.com.au/swms-api/v1/");
 
@@ -158,7 +158,7 @@ public class SimpliClient
         else if (action == SWMSWorkerAction.ResendInvitation)
             selectedAction = "resend-invitation";
         else
-            throw new ArgumentException(nameof(action));
+            throw new ArgumentException(null, nameof(action));
 
         var request = new RestRequest($"swms/{swmsId}/{workerId}", Method.Post);
         request.AddHeader("authorization", AccessToken!.AccessToken);
@@ -179,7 +179,7 @@ public class SimpliClient
     public async Task<SimpliProjectResponse?> GetProject(Guid projectId, bool includeSWMS = false, bool includeArchived = false)
     {
         await GetAuthTokenAsync();
-        var request = new RestRequest($"/projects/{projectId.ToString()}", Method.Get);
+        var request = new RestRequest($"/projects/{projectId}", Method.Get);
         request.AddHeader("authorization", AccessToken!.AccessToken);
         if (includeSWMS)
             request.AddQueryParameter(nameof(includeSWMS), true);
