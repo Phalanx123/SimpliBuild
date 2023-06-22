@@ -1,4 +1,5 @@
 ﻿
+using Microsoft.Extensions.Logging;
 using RestSharp;
 using RestSharp.Serializers.Json;
 using simpliBuild.SWMS.Model;
@@ -9,6 +10,7 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace simpliBuild;
@@ -18,46 +20,54 @@ public class SimpliClient
     private readonly string ApiSecret;
     private readonly string? OrganisationalID;
     private readonly string Api;
+    private readonly ILogger _logger;
     public SimpliAccessToken? AccessToken;
-
+    private static SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
     public static RestClient Client { get; set; }
          = new RestClient(@"https://api-prod.simpliswms.com.au/swms-api/v1/");
 
-    public SimpliClient(string apiKey, string apiSecret, string organisationalID)
-    {
-        ApiKey = apiKey;
-        ApiSecret = apiSecret;
-        OrganisationalID = organisationalID;
-        Api = "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(ApiKey + ":" + ApiSecret));
-        Client.UseSystemTextJson(new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault });
-    }
-
-    public SimpliClient(HttpClient client, string apiKey, string apiSecret)
+    public SimpliClient(string apiKey, string apiSecret, ILogger<SimpliClient> simpliClientLogger)
     {
         ApiKey = apiKey;
         ApiSecret = apiSecret;
         Api = "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(ApiKey + ":" + ApiSecret));
-
-    }
-    public SimpliClient(string apiKey, string apiSecret)
-    {
-        ApiKey = apiKey;
-        ApiSecret = apiSecret;
-        Api = "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(ApiKey + ":" + ApiSecret));
-
+        _logger=simpliClientLogger;
     }
     public async Task GetAuthTokenAsync()
     {
-        if (AccessToken == null || AccessToken.HasExpired)
+        await semaphore.WaitAsync();
+        try
         {
-            var request = new RestRequest("/oauth/token", Method.Post).AddHeader("Authorization", Api);
+            if (AccessToken == null || AccessToken.HasExpired)
+            {
+                _logger.LogInformation("Access token is null or expired. Retrieving new token...");
 
-            var result = await Client.ExecuteAsync<SimpliAccessToken>(request);
+                var request = new RestRequest("/oauth/token", Method.Post).AddHeader("Authorization", Api);
 
-            AccessToken = result.Data;
+                var result = await Client.ExecuteAsync<SimpliAccessToken>(request);
+
+                if (result.ErrorException != null)
+                {
+                    const string message = "Error retrieving response. Check inner details for more info.";
+                    var simpliException = new ApplicationException(message, result.ErrorException);
+                    _logger.LogError(simpliException, "Exception occurred while retrieving access token.");
+                    throw simpliException;
+                }
+
+                AccessToken = result.Data;
+                _logger.LogInformation("New access token retrieved successfully.");
+            }
+
+            if (AccessToken == null)
+            {
+                _logger.LogError("No SimpliSWMS token received.");
+                throw new AccessViolationException("No SimpliSWMS token received");
+            }
         }
-        if (AccessToken == null)
-            throw new AccessViolationException("No SimpliSWMS token received");
+        finally
+        {
+            semaphore.Release();
+        }
     }
 
 
@@ -105,9 +115,6 @@ public class SimpliClient
     {
 
         await GetAuthTokenAsync();
-
-
-
         var request = new RestRequest("workers", Method.Get);
         request.AddHeader("authorization", AccessToken!.AccessToken);
 
