@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.Extensions.Logging;
+using OneOf;
 using RestSharp;
 using RestSharp.Serializers.Json;
 using simpliBuild.SWMS.Model;
@@ -12,13 +13,13 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using static RFC7807Result;
 
 namespace simpliBuild;
 public class SimpliClient
 {
     private readonly string ApiKey;
     private readonly string ApiSecret;
-    private readonly string? OrganisationalID;
     private readonly string Api;
     private readonly ILogger _logger;
     public SimpliAccessToken? AccessToken;
@@ -71,14 +72,30 @@ public class SimpliClient
     }
 
 
-    public async Task<SimpliWorkerCreatedResponse?> CreateWorker(SimpliWorker simpliWorker)
+    public async Task<OneOf<SimpliWorkerCreatedResponse, ProblemDetails>> CreateWorker(SimpliWorker simpliWorker)
     {
+        RestRequest? request = null;
 
-        await GetAuthTokenAsync();
+        try
+        {
+            await GetAuthTokenAsync();
+            request = GenerateWorkerCreationRequest(simpliWorker);
+            var result = await Client.PostAsync(request);
+            return ProcessWorkerCreationResult(result);
+        }
+        catch (Exception ex)
+        {
+            if (request != null)
+                return GenerateExceptionProblemDetails(request, ex);
+            else
+                throw; // rethrow the original exception if request object is null
+        }
+    }
 
-
+    private RestRequest GenerateWorkerCreationRequest(SimpliWorker simpliWorker)
+    {
         var request = new RestRequest("workers", Method.Post);
-        request.AddHeader("authorization", AccessToken.AccessToken);
+        request.AddHeader("authorization", AccessToken!.AccessToken);
         request.AddJsonBody(
             new
             {
@@ -88,22 +105,72 @@ public class SimpliClient
                 firstName = simpliWorker.FirstName,
                 lastName = simpliWorker.LastName
             });
+        return request;
+    }
 
-        var result = await Client.PostAsync(request);
+    private OneOf<SimpliWorkerCreatedResponse, ProblemDetails> ProcessWorkerCreationResult(RestResponse result)
+    {
         if (result.Content == null)
-            throw new Exception();
+        {
+            return GenerateContentNullProblemDetails(result.Request);
+        }
+
         var worker = JsonSerializer.Deserialize<SimpliWorkerCreatedResponse>(result.Content);
 
-        if (worker?.Worker != null && worker.Worker.Id == null)
-            throw new Exception();
+        if (worker?.Worker == null || worker.Worker.Id == null)
+        {
+            return GenerateInvalidWorkerProblemDetails(result.Request);
+        }
 
         return worker;
+    }
+
+    private ProblemDetails GenerateContentNullProblemDetails(RestRequest request)
+    {
+        var problemDetails = new ProblemDetails
+        {
+            Type = new Uri("about:blank"),
+            Title = "Content Null",
+            Status = HttpStatusCode.InternalServerError,
+            Detail = "The response content is null.",
+            Instance = Client.BuildUri(request)
+        };
+        _logger.LogCritical(problemDetails.Detail);
+        return problemDetails;
+    }
+
+    private ProblemDetails GenerateInvalidWorkerProblemDetails(RestRequest request)
+    {
+        var problemDetails = new ProblemDetails
+        {
+            Type = new Uri("about:blank"),
+            Title = "Invalid Worker",
+            Status = HttpStatusCode.InternalServerError,
+            Detail = "The created worker is null or its ID is null.",
+            Instance = Client.BuildUri(request)
+        };
+        _logger.LogCritical(problemDetails.Detail);
+        return problemDetails;
+    }
+
+    private ProblemDetails GenerateExceptionProblemDetails(RestRequest request, Exception ex)
+    {
+        var problemDetails = new ProblemDetails
+        {
+            Type = new Uri("about:blank"),
+            Title = "Internal Server Error",
+            Status = HttpStatusCode.InternalServerError,
+            Detail = $"An unexpected error occurred while processing the request. Exception: {ex.Message}",
+            Instance = Client.BuildUri(request)
+        };
+        _logger.LogCritical(problemDetails.Detail, ex);
+        return problemDetails;
     }
 
     /// <summary>
     /// Gets workers
     /// </summary>
-    /// <param name="includeSWMS">Include details of signed swms</param>
+    /// <param name="includeSWMS">Include details of signed SWMS</param>
     /// <param name="id">Worker ID</param>
     /// <param name="keyword">Searches First Name, Last Name, Company etc</param>
     /// <param name="attributes">Which fields to return, firstName, lastName, company, id</param>
@@ -166,7 +233,7 @@ public class SimpliClient
 
 
         var result = await Client.ExecuteAsync(request);
-        SimpliPerformActionOnSWMSWorkerResponse workersResponse = JsonSerializer.Deserialize<SimpliPerformActionOnSWMSWorkerResponse>(result.Content)!;
+        SimpliPerformActionOnSWMSWorkerResponse workersResponse = JsonSerializer.Deserialize<SimpliPerformActionOnSWMSWorkerResponse>(result.Content!)!;
         return workersResponse!;
     }
 
@@ -176,22 +243,68 @@ public class SimpliClient
     /// <param name="projectId">Project ID of project</param>
     /// <returns></returns>
     /// <exception cref="AccessViolationException">Issue with token</exception>
-    public async Task<SimpliProjectResponse?> GetProject(Guid projectId, bool includeSWMS = false, bool includeArchived = false)
+    public async Task<OneOf<SimpliProjectResponse, ProblemDetails>> GetProject(Guid projectId, bool includeSWMS = false, bool includeArchived = false)
     {
-        await GetAuthTokenAsync();
         var request = new RestRequest($"/projects/{projectId}", Method.Get);
-        request.AddHeader("authorization", AccessToken!.AccessToken);
-        if (includeSWMS)
-            request.AddQueryParameter(nameof(includeSWMS), true);
-        var result = await Client.ExecuteAsync(request);
-        if (result.StatusCode == HttpStatusCode.NotFound)
-            return null;
-        var serialResult = JsonSerializer.Deserialize<SimpliProjectResponse>(result.Content);
-        if (!includeArchived && serialResult?.Project?.SWMS != null)
-            serialResult.Project.SWMS = serialResult.Project.SWMS.Where(x => x.Status != "Archived");
-        return serialResult;
+        try
+        {
+            await GetAuthTokenAsync();
 
+            request.AddHeader("authorization", AccessToken!.AccessToken);
+            if (includeSWMS)
+                request.AddQueryParameter(nameof(includeSWMS), true);
+            var result = await Client.ExecuteAsync(request);
 
+            if (result.StatusCode == HttpStatusCode.NotFound)
+            {
+                return GenerateNotFoundProblemDetails(request, projectId);
+            }
+
+            if (!result.IsSuccessful)
+            {
+                return GenerateServerErrorProblemDetails(request);
+            }
+
+            var serialResult = JsonSerializer.Deserialize<SimpliProjectResponse>(result.Content!);
+
+            if (!includeArchived && serialResult?.Project?.SWMS != null)
+                serialResult.Project.SWMS = serialResult.Project.SWMS.Where(x => x.Status != "Archived");
+
+            _logger.LogInformation($"Successfully retrieved project with ID '{projectId}'.");
+            return serialResult!;
+        }
+        catch (Exception ex)
+        {
+            return GenerateExceptionProblemDetails(request, ex);
+        }
+    }
+
+    private ProblemDetails GenerateNotFoundProblemDetails(RestRequest request, Guid projectId)
+    {
+        var problemDetails = new ProblemDetails
+        {
+            Type = new Uri("about:blank"),
+            Title = "Project Not Found",
+            Status = HttpStatusCode.NotFound,
+            Detail = $"Project with ID '{projectId}' not found.",
+            Instance = Client.BuildUri(request)
+        };
+        _logger.LogInformation(problemDetails.Detail);
+        return problemDetails;
+    }
+
+    private ProblemDetails GenerateServerErrorProblemDetails(RestRequest request)
+    {
+        var problemDetails = new ProblemDetails
+        {
+            Type = new Uri("about:blank"),
+            Title = "Internal Server Error",
+            Status = HttpStatusCode.InternalServerError,
+            Detail = "An unexpected error occurred on the SimpliSWMS server.",
+            Instance = Client.BuildUri(request)
+        };
+        _logger.LogCritical(problemDetails.Detail);
+        return problemDetails;
     }
 
     /// <summary>
@@ -220,7 +333,7 @@ public class SimpliClient
               organisationId = simpliProject.OrganisationID
           });
         var result = await Client.ExecuteAsync(request);
-        SimpliProjectResponse? projectResponse = JsonSerializer.Deserialize<SimpliProjectResponse>(result.Content);
+        SimpliProjectResponse? projectResponse = JsonSerializer.Deserialize<SimpliProjectResponse>(result.Content!);
 
         if (projectResponse?.Project != null && projectResponse.Project.Id == null)
             throw new Exception();
@@ -231,7 +344,7 @@ public class SimpliClient
     {
         await GetAuthTokenAsync();
         var request = new RestRequest($"swms/{swmsId}/invite", Method.Put);
-        request.AddHeader("authorization", AccessToken.AccessToken);
+        request.AddHeader("authorization", AccessToken!.AccessToken);
         request.AddQueryParameter(nameof(workerId), workerId);
         request.AddQueryParameter(nameof(sendInvitation), sendInvitation);
 
