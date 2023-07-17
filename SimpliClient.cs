@@ -80,7 +80,7 @@ public class SimpliClient
         {
             await GetAuthTokenAsync();
             request = GenerateWorkerCreationRequest(simpliWorker);
-            var result = await Client.PostAsync(request);
+            var result = await Client.ExecuteAsync(request);
             return ProcessWorkerCreationResult(result);
         }
         catch (Exception ex)
@@ -115,6 +115,11 @@ public class SimpliClient
             return GenerateContentNullProblemDetails(result.Request);
         }
 
+        if(result.StatusCode== HttpStatusCode.Conflict)
+        {
+            return GenerateConflictProblemDetails(result);
+        }
+
         var worker = JsonSerializer.Deserialize<SimpliWorkerCreatedResponse>(result.Content);
 
         if (worker?.Worker == null || worker.Worker.Id == null)
@@ -123,6 +128,21 @@ public class SimpliClient
         }
 
         return worker;
+    }
+
+    private ProblemDetails GenerateConflictProblemDetails(RestResponse response)
+    {
+
+        var problemDetails = new ProblemDetails
+        {
+            Type = new Uri("about:blank"),
+            Title = "Conflict",
+            Status = HttpStatusCode.Conflict,
+            Detail = response.ErrorMessage!,
+            Instance = Client.BuildUri(response.Request)
+        };
+        _logger.LogCritical(problemDetails.Detail);
+        return problemDetails;
     }
 
     private ProblemDetails GenerateContentNullProblemDetails(RestRequest request)
@@ -160,7 +180,7 @@ public class SimpliClient
             Type = new Uri("about:blank"),
             Title = "Internal Server Error",
             Status = HttpStatusCode.InternalServerError,
-            Detail = $"An unexpected error occurred while processing the request. Exception: {ex.Message}",
+            Detail = $"An unexpected error occurred while processing the request.",
             Instance = Client.BuildUri(request)
         };
         _logger.LogCritical(problemDetails.Detail, ex);
