@@ -217,6 +217,11 @@ public class SimpliClient
 
 
         var result = await Client.ExecuteAsync(request);
+        if(result.IsSuccessful == false)
+        {
+            _logger.LogError($"Error getting workers from SimpliSWMS: {result.StatusDescription}");
+            throw new Exception("No workers received from SimpliSWMS");
+        }
         if (result.Content == null)
             throw new Exception("Content received from SimpliSWMS is empty");
 
