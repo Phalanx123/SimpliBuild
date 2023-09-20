@@ -258,7 +258,7 @@ public class SimpliClient
 
 
         var result = await Client.ExecuteAsync(request);
-        SimpliPerformActionOnSWMSWorkerResponse workersResponse = JsonSerializer.Deserialize<SimpliPerformActionOnSWMSWorkerResponse>(result.Content!)!;
+        var workersResponse = JsonSerializer.Deserialize<SimpliPerformActionOnSWMSWorkerResponse>(result.Content!)!;
         return workersResponse!;
     }
 
@@ -358,7 +358,7 @@ public class SimpliClient
               organisationId = simpliProject.OrganisationID
           });
         var result = await Client.ExecuteAsync(request);
-        SimpliProjectResponse? projectResponse = JsonSerializer.Deserialize<SimpliProjectResponse>(result.Content!);
+        var projectResponse = JsonSerializer.Deserialize<SimpliProjectResponse>(result.Content!);
 
         if (projectResponse?.Project != null && projectResponse.Project.Id == null)
             throw new Exception();
@@ -376,7 +376,7 @@ public class SimpliClient
         //Adds the project
         var result = await Client.ExecuteAsync(request);
         //TODO {"error":{"status":400,"code":"40002","message":"Workers is unknown","field":"Workers"}}
-        SimpliWorkerInvitedToSwmsResponse? response = JsonSerializer.Deserialize<SimpliWorkerInvitedToSwmsResponse>(result.Content!);
+        var response = JsonSerializer.Deserialize<SimpliWorkerInvitedToSwmsResponse>(result.Content!);
         if (response!.Error != null)
             return false;
         return response!.Data.IsSuccessful;
