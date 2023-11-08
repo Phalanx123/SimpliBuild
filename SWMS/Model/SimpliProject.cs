@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text.Json.Serialization;
+using simpliBuild.SWMS.Model.Responses;
 
 namespace simpliBuild.SWMS.Model
 {
@@ -16,13 +18,13 @@ namespace simpliBuild.SWMS.Model
         /// Project Name/Description
         /// </summary>
         [JsonPropertyName("name")]
-        public string? Name { get; set; }
+        public required string Name { get; set; }
 
         /// <summary>
         /// Project Address Line 1
         /// </summary>
         [JsonPropertyName("address1")]
-        public string? Address1 { get; set; }
+        public required string Address1 { get; set; }
 
         /// <summary>
         /// Project Address Line 2
@@ -35,19 +37,24 @@ namespace simpliBuild.SWMS.Model
         /// </summary>
 
         [JsonPropertyName("suburb")]
-        public string? Suburb { get; set; }
+        public required string Suburb { get; set; }
 
         /// <summary>
         /// Project State
         /// </summary>
         [JsonPropertyName("state")]
-        public string? State { get; set; }
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public StateOrRegion? State { get; set; }
 
         /// <summary>
         /// Project Postcode
         /// </summary>
         [JsonPropertyName("postcode")]
         public string? PostCode { get; set; }
+
+        [JsonPropertyName("country")] 
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public required Country Country { get; set; }
 
         /// <summary>
         /// Date/Time project was created
@@ -68,15 +75,67 @@ namespace simpliBuild.SWMS.Model
         public Guid? ArchivedBy { get; set; }
 
         /// <summary>
-        /// ID of the organisation that created it
-        /// </summary>
-        [JsonPropertyName("organisationId")]
-        public string? OrganisationID { get; set; }
-
-        /// <summary>
         /// SWMS relating to this project
         /// </summary>
         [JsonPropertyName("swms")]
         public IEnumerable<SimpliSWMS>? SWMS { get; set; }
+    }
+
+    public enum Country
+    {
+        [Description("Australia")] Australia = 1,
+        [Description("New Zealand")] NewZealand = 2
+    }
+
+
+    public enum StateOrRegion
+    {
+        [Description("New South Wales")]
+        NewSouthWales = 1,
+        [Description("Queensland")]
+        Queensland = 2,
+        [Description("South Australia")]
+        SouthAustralia = 3,
+        [Description("Tasmania")]
+        Tasmania = 4,
+        [Description("Victoria")]
+        Victoria = 5,
+        [Description("Western Australia")]
+        WesternAustralia = 6,
+        [Description("Australian Capital Territory")]
+        AustralianCapitalTerritory = 7,
+        // New Zealand regions start from here
+        [Description("Bay of Plenty")]
+        BayOfPlenty = 11,
+        [Description("Auckland")]
+        Auckland = 12,
+        [Description("Canterbury")]
+        Canterbury = 13,
+        [Description("Hawke's Bay")]
+        HawkesBay = 14,
+        [Description("Gisborne")]
+        Gisborne = 15,
+        [Description("Marlborough")]
+        Marlborough = 16,
+        [Description("Manawatu-Wanganui")]
+        ManawatuWanganui = 17,
+        [Description("Northland")]
+        Northland = 18,
+        [Description("Nelson")]
+        Nelson = 19,
+        [Description("Southland")]
+        Southland = 20,
+        [Description("Otago")]
+        Otago = 21,
+        [Description("Tasman")]
+        Tasman = 22,
+        [Description("Taranaki")]
+        Taranaki = 23,
+        [Description("Waikato")]
+        Waikato = 24,
+        [Description("Wellington")]
+        Wellington = 25,
+        [Description("West Coast")]
+        WestCoast = 26
     }
 }

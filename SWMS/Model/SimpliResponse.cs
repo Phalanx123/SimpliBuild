@@ -27,11 +27,9 @@ namespace simpliBuild.SWMS.Model
         public Data Data { get; set; }
     }
 
-    public class SimpliWorkersResponse : SimpliResponse
-    {
-        [JsonPropertyName("data")] public List<SimpliWorker>? Workers { get; set; }
-    }
-
+ 
+    
+    
     /// <summary>
     /// Did the action work?
     /// </summary>

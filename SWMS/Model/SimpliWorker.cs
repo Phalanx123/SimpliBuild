@@ -21,6 +21,9 @@ namespace simpliBuild.SWMS.Model
         [JsonPropertyName("employerBusinessName")]
         public string? EmployerBusinessName { get; set; }
 
+        [JsonPropertyName("preferredLanguage")]
+        public required string PreferredLanguage { get; set; }
+        
         [JsonPropertyName("mobile")]
         public string? Mobile { get; set; }
 

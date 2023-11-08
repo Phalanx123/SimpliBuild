@@ -1,10 +1,10 @@
-﻿
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using OneOf;
 using RestSharp;
 using RestSharp.Serializers.Json;
 using simpliBuild.SWMS.Model;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -13,9 +13,12 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using simpliBuild.SWMS.Model.Responses;
+using simpliBuild.Utils;
 using static RFC7807Result;
 
 namespace simpliBuild;
+
 public class SimpliClient
 {
     private readonly string ApiKey;
@@ -24,16 +27,18 @@ public class SimpliClient
     private readonly ILogger _logger;
     public SimpliAccessToken? AccessToken;
     private static readonly SemaphoreSlim semaphore = new(1, 1);
+
     public static RestClient Client { get; set; }
-         = new RestClient(@"https://api-prod.simpliswms.com.au/swms-api/v1/");
+        = new RestClient(@"https://api-prod.simpliswms.com.au/swms-api/v1/");
 
     public SimpliClient(string apiKey, string apiSecret, ILogger<SimpliClient> simpliClientLogger)
     {
         ApiKey = apiKey;
         ApiSecret = apiSecret;
         Api = "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(ApiKey + ":" + ApiSecret));
-        _logger=simpliClientLogger;
+        _logger = simpliClientLogger;
     }
+
     public async Task GetAuthTokenAsync()
     {
         await semaphore.WaitAsync();
@@ -103,7 +108,8 @@ public class SimpliClient
                 mobile = simpliWorker.Mobile,
                 employerBusinessName = simpliWorker.EmployerBusinessName,
                 firstName = simpliWorker.FirstName,
-                lastName = simpliWorker.LastName
+                lastName = simpliWorker.LastName,
+                preferredLanguage = simpliWorker.PreferredLanguage
             });
         return request;
     }
@@ -115,7 +121,7 @@ public class SimpliClient
             return GenerateContentNullProblemDetails(result.Request);
         }
 
-        if(result.StatusCode== HttpStatusCode.Conflict)
+        if (result.StatusCode == HttpStatusCode.Conflict)
         {
             return GenerateConflictProblemDetails(result);
         }
@@ -132,7 +138,6 @@ public class SimpliClient
 
     private ProblemDetails GenerateConflictProblemDetails(RestResponse response)
     {
-
         var problemDetails = new ProblemDetails
         {
             Type = new Uri("about:blank"),
@@ -191,42 +196,69 @@ public class SimpliClient
     /// Gets workers
     /// </summary>
     /// <param name="includeSWMS">Include details of signed SWMS</param>
-    /// <param name="id">Worker ID</param>
     /// <param name="keyword">Searches First Name, Last Name, Company etc</param>
     /// <param name="attributes">Which fields to return, firstName, lastName, company, id</param>
     /// <param name="offset">Skip how many results</param>
     /// <param name="limit">Return how many</param>
     /// <returns></returns>
     /// <exception cref="AccessViolationException"></exception>
-    public async Task<SimpliWorkersResponse?> GetWorkers(bool includeSWMS = false, string id = "", string? keyword = default, string[]? attributes = default, int offset = 0, int limit = 100)
+    public async Task<SimpliResponses.SimpliResponse> GetWorkers(bool includeSWMS = false,
+        string? keyword = default, string[]? attributes = default, int? offset = 0, int limit = 100)
     {
-
         await GetAuthTokenAsync();
+
         var request = new RestRequest("workers", Method.Get);
         request.AddHeader("authorization", AccessToken!.AccessToken);
 
-        if (!string.IsNullOrWhiteSpace(id))
-            request.AddQueryParameter("id", id);
         if (!string.IsNullOrEmpty(keyword))
             request.AddQueryParameter("keyword", keyword);
         if (attributes != null)
             request.AddQueryParameter("attributes", string.Concat(",", attributes));
         request.AddQueryParameter("includeSWMS", includeSWMS.ToString());
+        offset ??= 0;
         request.AddQueryParameter("offset", offset.ToString());
         request.AddQueryParameter("limit", limit.ToString());
 
 
         var result = await Client.ExecuteAsync(request);
-        if(result.IsSuccessful == false)
+        if (result.IsSuccessful == false)
         {
-            _logger.LogError($"Error getting workers from SimpliSWMS: {result.StatusDescription}");
+            _logger.LogError("Error getting workers from SimpliSWMS: {0}", result.StatusDescription);
             throw new Exception("No workers received from SimpliSWMS");
         }
+
         if (result.Content == null)
             throw new Exception("Content received from SimpliSWMS is empty");
 
-        var workersResponse = JsonSerializer.Deserialize<SimpliWorkersResponse>(result.Content);
-        return workersResponse;
+        var workersResponse = JsonSerializer.Deserialize<SimpliResponses.SimpliResponse>(result.Content);
+        return workersResponse!;
+    }
+
+    /// <summary>
+    /// Gets workers
+    /// </summary>
+    /// <returns></returns>
+    /// <exception cref="AccessViolationException"></exception>
+    public async Task<SimpliWorkerResponse> GetWorker(string id, bool includeSWMS)
+    {
+        await GetAuthTokenAsync();
+
+        var request = new RestRequest($"workers/{id}");
+        request.AddHeader("authorization", AccessToken!.AccessToken);
+        request.AddQueryParameter("includeSWMS", includeSWMS.ToString());
+
+        var result = await Client.ExecuteAsync(request);
+        if (result.IsSuccessful == false)
+        {
+            _logger.LogError($"Error getting worker from SimpliSWMS: {result.StatusDescription}");
+            throw new Exception("No worker received from SimpliSWMS");
+        }
+
+        if (result.Content == null)
+            throw new Exception("Content received from SimpliSWMS is empty");
+
+        var workersResponse = JsonSerializer.Deserialize<SimpliWorkerResponse>(result.Content);
+        return workersResponse!;
     }
 
     /// <summary>
@@ -238,7 +270,8 @@ public class SimpliClient
     /// <returns></returns>
     /// <exception cref="AccessViolationException">Issue with token</exception>
     /// <exception cref="ArgumentException">Action is invalid</exception>
-    public async Task<SimpliPerformActionOnSWMSWorkerResponse> PerformActionOnWorker(string swmsId, string workerId, SWMSWorkerAction action)
+    public async Task<SimpliPerformActionOnSWMSWorkerResponse> PerformActionOnWorker(string swmsId, string workerId,
+        SWMSWorkerAction action)
     {
         await GetAuthTokenAsync();
 
@@ -268,7 +301,8 @@ public class SimpliClient
     /// <param name="projectId">Project ID of project</param>
     /// <returns></returns>
     /// <exception cref="AccessViolationException">Issue with token</exception>
-    public async Task<OneOf<SimpliProjectResponse, ProblemDetails>> GetProject(Guid projectId, bool includeSWMS = false, bool includeArchived = false)
+    public async Task<OneOf<SimpliProjectResponse, ProblemDetails>> GetProject(Guid projectId, bool includeSWMS = false,
+        bool includeArchived = false)
     {
         var request = new RestRequest($"/projects/{projectId}", Method.Get);
         try
@@ -289,6 +323,7 @@ public class SimpliClient
             {
                 return GenerateServerErrorProblemDetails(request);
             }
+   
 
             var serialResult = JsonSerializer.Deserialize<SimpliProjectResponse>(result.Content!);
 
@@ -336,29 +371,45 @@ public class SimpliClient
     ///     Adds the project to SimpliSWMS
     /// </summary>
     /// <param name="project">SimpliSWMS Project</param>
+    /// <param name="organisationId"></param>
     /// <returns>Response</returns>
-    public async Task<SimpliProjectResponse?> CreateProject(SimpliProject simpliProject)
+    public async Task<SimpliProjectResponse?> CreateProject(SimpliProject simpliProject, Guid organisationId)
     {
-
         await GetAuthTokenAsync();
 
         var request = new RestRequest("projects", Method.Post);
         request.AddHeader("authorization", AccessToken!.AccessToken);
+        request.AddHeader("X-Organisation-Id", organisationId.ToString());
+        var jsonBody = new Dictionary<string, object>
+        {
+            { "name", simpliProject.Name },
+            { "address1", simpliProject.Address1 },
+            { "suburb", simpliProject.Suburb },
+            { "state", simpliProject.State.GetDescription() },
+            { "country", simpliProject.Country.GetDescription() }
+        };
+        if (!string.IsNullOrWhiteSpace(simpliProject.Address2))
+        {
+            jsonBody.Add("address2", simpliProject.Address2);
+        }
+        if (!string.IsNullOrWhiteSpace(simpliProject.Code))
+        {
+            jsonBody.Add("code", simpliProject.Code);
+        }
+        if (!string.IsNullOrWhiteSpace(simpliProject.PostCode))
+        {
+            jsonBody.Add("postcode", simpliProject.PostCode);
+        }
 
-        request.AddJsonBody(
-          new
-          {
-              name = simpliProject.Name,
-              address1 = simpliProject.Address1,
-              address2 = simpliProject.Address2,
-              suburb = simpliProject.Suburb,
-              state = simpliProject.State,
-              postcode = simpliProject.PostCode,
-              code = simpliProject.Code,
-              organisationId = simpliProject.OrganisationID
-          });
+        request.AddJsonBody(jsonBody);
+        
         var result = await Client.ExecuteAsync(request);
-        var projectResponse = JsonSerializer.Deserialize<SimpliProjectResponse>(result.Content!);
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            Converters = { new JsonStringEnumConverter() }
+        };
+        var projectResponse = JsonSerializer.Deserialize<SimpliProjectResponse>(result.Content!, options);
 
         if (projectResponse?.Project != null && projectResponse.Project.Id == null)
             throw new Exception();
@@ -368,9 +419,8 @@ public class SimpliClient
     public async Task<bool> InviteWorkerToSWMS(string swmsId, string workerId, bool sendInvitation = false)
     {
         await GetAuthTokenAsync();
-        var request = new RestRequest($"swms/{swmsId}/invite", Method.Put);
+        var request = new RestRequest($"swms/{swmsId}/invite/{workerId}", Method.Put);
         request.AddHeader("authorization", AccessToken!.AccessToken);
-        request.AddQueryParameter(nameof(workerId), workerId);
         request.AddQueryParameter(nameof(sendInvitation), sendInvitation);
 
         //Adds the project
