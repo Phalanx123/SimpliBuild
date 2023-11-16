@@ -24,7 +24,7 @@ namespace simpliBuild.SWMS.Model
         /// Project Address Line 1
         /// </summary>
         [JsonPropertyName("address1")]
-        public required string Address1 { get; set; }
+        public string? Address1 { get; set; }
 
         /// <summary>
         /// Project Address Line 2
@@ -37,7 +37,7 @@ namespace simpliBuild.SWMS.Model
         /// </summary>
 
         [JsonPropertyName("suburb")]
-        public required string Suburb { get; set; }
+        public string? Suburb { get; set; }
 
         /// <summary>
         /// Project State
@@ -54,7 +54,7 @@ namespace simpliBuild.SWMS.Model
 
         [JsonPropertyName("country")] 
         [JsonConverter(typeof(JsonStringEnumConverter))]
-        public required Country Country { get; set; }
+        public Country? Country { get; set; }
 
         /// <summary>
         /// Date/Time project was created
