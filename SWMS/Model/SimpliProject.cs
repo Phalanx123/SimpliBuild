@@ -73,6 +73,12 @@ namespace simpliBuild.SWMS.Model
         /// </summary>
         [JsonPropertyName("archivedBy")]
         public Guid? ArchivedBy { get; set; }
+        
+        /// <summary>
+        /// Organisation ID
+        /// </summary>
+        [JsonPropertyName("organisationId")]
+        public Guid? OrganisationId { get; set; }
 
         /// <summary>
         /// SWMS relating to this project

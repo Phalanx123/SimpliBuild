@@ -299,9 +299,12 @@ public class SimpliClient
     /// Gets a specific project
     /// </summary>
     /// <param name="projectId">Project ID of project</param>
+    /// <param name="organisationId"></param>
+    /// <param name="includeSWMS"></param>
+    /// <param name="includeArchived"></param>
     /// <returns></returns>
     /// <exception cref="AccessViolationException">Issue with token</exception>
-    public async Task<OneOf<SimpliProjectResponse, ProblemDetails>> GetProject(Guid projectId, bool includeSWMS = false,
+    public async Task<OneOf<SimpliProjectResponse, ProblemDetails>> GetProject(Guid projectId, Guid organisationId, bool includeSWMS = false,
         bool includeArchived = false)
     {
         var request = new RestRequest($"/projects/{projectId}", Method.Get);
@@ -312,6 +315,7 @@ public class SimpliClient
             request.AddHeader("authorization", AccessToken!.AccessToken);
             if (includeSWMS)
                 request.AddQueryParameter(nameof(includeSWMS), true);
+            request.AddHeader("X-Organisation-Id", organisationId);
             var result = await Client.ExecuteAsync(request);
 
             if (result.StatusCode == HttpStatusCode.NotFound)
@@ -416,11 +420,12 @@ public class SimpliClient
         return projectResponse;
     }
 
-    public async Task<bool> InviteWorkerToSWMS(string swmsId, string workerId, bool sendInvitation = false)
+    public async Task<bool> InviteWorkerToSWMS(string swmsId, Guid organisationId,  string workerId, bool sendInvitation = false)
     {
         await GetAuthTokenAsync();
         var request = new RestRequest($"swms/{swmsId}/invite/{workerId}", Method.Put);
         request.AddHeader("authorization", AccessToken!.AccessToken);
+        request.AddHeader("X-Organisation-Id", organisationId);
         request.AddQueryParameter(nameof(sendInvitation), sendInvitation);
 
         //Adds the project
