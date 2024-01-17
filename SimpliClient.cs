@@ -420,20 +420,34 @@ public class SimpliClient
         return projectResponse;
     }
 
-    public async Task<bool> InviteWorkerToSWMS(string swmsId, Guid organisationId,  string workerId, bool sendInvitation = false)
+    // public async Task<bool> InviteWorkerToSWMS(string swmsId, Guid organisationId,  string workerId, bool sendInvitation = false)
+    // {
+    //     await GetAuthTokenAsync();
+    //     var request = new RestRequest($"swms/{swmsId}/invite/{workerId}", Method.Put);
+    //     request.AddHeader("authorization", AccessToken!.AccessToken);
+    //     request.AddHeader("X-Organisation-Id", organisationId);
+    //     request.AddQueryParameter(nameof(sendInvitation), sendInvitation);
+    //
+    //     //Adds the project
+    //     var result = await Client.ExecuteAsync(request);
+    //     //TODO {"error":{"status":400,"code":"40002","message":"Workers is unknown","field":"Workers"}}
+    //     var response = JsonSerializer.Deserialize<SimpliWorkerInvitedToSwmsResponse>(result.Content!);
+    //     if (response!.Error != null)
+    //         return false;
+    //     return response!.Data.IsSuccessful;
+    // }
+    
+    public async Task<bool> InviteWorkerToSWMS(string swmsId,  string workerId, bool sendInvitation = false)
     {
         await GetAuthTokenAsync();
         var request = new RestRequest($"swms/{swmsId}/invite/{workerId}", Method.Put);
         request.AddHeader("authorization", AccessToken!.AccessToken);
-        request.AddHeader("X-Organisation-Id", organisationId);
         request.AddQueryParameter(nameof(sendInvitation), sendInvitation);
 
         //Adds the project
         var result = await Client.ExecuteAsync(request);
         //TODO {"error":{"status":400,"code":"40002","message":"Workers is unknown","field":"Workers"}}
         var response = JsonSerializer.Deserialize<SimpliWorkerInvitedToSwmsResponse>(result.Content!);
-        if (response!.Error != null)
-            return false;
         return response!.Data.IsSuccessful;
     }
 }
