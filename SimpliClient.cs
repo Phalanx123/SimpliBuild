@@ -390,7 +390,8 @@ public class SimpliClient
             { "address1", simpliProject.Address1 },
             { "suburb", simpliProject.Suburb },
             { "state", simpliProject.State.GetDescription() },
-            { "country", simpliProject.Country.GetDescription() }
+            { "country", simpliProject.Country.GetDescription() },
+            {"postcode", simpliProject.PostCode}
         };
         if (!string.IsNullOrWhiteSpace(simpliProject.Address2))
         {
@@ -399,10 +400,6 @@ public class SimpliClient
         if (!string.IsNullOrWhiteSpace(simpliProject.Code))
         {
             jsonBody.Add("code", simpliProject.Code);
-        }
-        if (!string.IsNullOrWhiteSpace(simpliProject.PostCode))
-        {
-            jsonBody.Add("postcode", simpliProject.PostCode);
         }
 
         request.AddJsonBody(jsonBody);
