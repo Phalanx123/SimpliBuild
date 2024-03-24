@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text.Json.Serialization;
-using simpliBuild.SWMS.Model.Responses;
 
 namespace simpliBuild.SWMS.Model
 {

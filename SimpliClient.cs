@@ -1,13 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
 using OneOf;
 using RestSharp;
-using RestSharp.Serializers.Json;
 using simpliBuild.SWMS.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
