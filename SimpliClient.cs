@@ -11,6 +11,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using simpliBuild.Exceptions;
 using simpliBuild.SWMS.Model.Responses;
 using simpliBuild.Utils;
 using static RFC7807Result;
@@ -37,6 +38,9 @@ public class SimpliClient
         _logger = simpliClientLogger;
     }
 
+    // Assuming SimpliBuildTokenRetrievalException and SimpliBuildTokenNullException
+// are defined in your Exceptions folder.
+
     public async Task GetAuthTokenAsync()
     {
         await semaphore.WaitAsync();
@@ -47,15 +51,12 @@ public class SimpliClient
                 _logger.LogInformation("Access token is null or expired. Retrieving new token...");
 
                 var request = new RestRequest("/oauth/token", Method.Post).AddHeader("Authorization", Api);
-
                 var result = await Client.ExecuteAsync<SimpliAccessToken>(request);
 
                 if (result.ErrorException != null)
                 {
-                    const string message = "Error retrieving response. Check inner details for more info.";
-                    var simpliException = new ApplicationException(message, result.ErrorException);
-                    _logger.LogError(simpliException, "Exception occurred while retrieving access token.");
-                    throw simpliException;
+                    _logger.LogError(result.ErrorException, "Exception occurred while retrieving access token.");
+                    throw new SimpliBuildTokenRetrievalException("Error retrieving access token.", result.ErrorException);
                 }
 
                 AccessToken = result.Data;
@@ -65,7 +66,7 @@ public class SimpliClient
             if (AccessToken == null)
             {
                 _logger.LogError("No SimpliSWMS token received.");
-                throw new AccessViolationException("No SimpliSWMS token received");
+                throw new SimpliBuildTokenNullException("No SimpliSWMS token received");
             }
         }
         finally
@@ -190,16 +191,17 @@ public class SimpliClient
         return problemDetails;
     }
 
-    /// <summary>
-    /// Gets workers
+  /// <summary>
+    /// Gets workers with optional search and filtering parameters.
     /// </summary>
     /// <param name="includeSWMS">Include details of signed SWMS</param>
     /// <param name="keyword">Searches First Name, Last Name, Company etc</param>
     /// <param name="attributes">Which fields to return, firstName, lastName, company, id</param>
     /// <param name="offset">Skip how many results</param>
     /// <param name="limit">Return how many</param>
-    /// <returns></returns>
-    /// <exception cref="AccessViolationException"></exception>
+    /// <returns>A SimpliResponse containing the list of workers.</returns>
+    /// <exception cref="SimpliBuildApiException">Thrown when there's an error retrieving the workers from the API.</exception>
+    /// <exception cref="SimpliBuildContentException">Thrown when the API response content is empty or deserialization fails.</exception>
     public async Task<SimpliResponses.SimpliResponse> GetWorkers(bool includeSWMS = false,
         string? keyword = default, string[]? attributes = default, int? offset = 0, int limit = 100)
     {
@@ -211,32 +213,37 @@ public class SimpliClient
         if (!string.IsNullOrEmpty(keyword))
             request.AddQueryParameter("keyword", keyword);
         if (attributes != null)
-            request.AddQueryParameter("attributes", string.Concat(",", attributes));
+            request.AddQueryParameter("attributes", string.Join(",", attributes));
         request.AddQueryParameter("includeSWMS", includeSWMS.ToString());
         offset ??= 0;
         request.AddQueryParameter("offset", offset.ToString());
         request.AddQueryParameter("limit", limit.ToString());
 
-
         var result = await Client.ExecuteAsync(request);
-        if (result.IsSuccessful == false)
+        if (!result.IsSuccessful)
         {
             _logger.LogError("Error getting workers from SimpliSWMS: {0}", result.StatusDescription);
-            throw new Exception("No workers received from SimpliSWMS");
+            throw new SimpliBuildApiException("No workers received from SimpliSWMS");
         }
 
-        if (result.Content == null)
-            throw new Exception("Content received from SimpliSWMS is empty");
+        if (string.IsNullOrEmpty(result.Content))
+        {
+            _logger.LogError("Content received from SimpliSWMS is empty");
+            throw new SimpliBuildContentException("Content received from SimpliSWMS is empty");
+        }
 
         var workersResponse = JsonSerializer.Deserialize<SimpliResponses.SimpliResponse>(result.Content);
-        return workersResponse!;
+        return workersResponse ?? throw new SimpliBuildContentException("Deserialization of workers response failed");
     }
-
+  
     /// <summary>
-    /// Gets workers
+    /// Gets a worker by their ID.
     /// </summary>
-    /// <returns></returns>
-    /// <exception cref="AccessViolationException"></exception>
+    /// <param name="id">The ID of the worker to retrieve.</param>
+    /// <param name="includeSWMS">Indicates whether to include SWMS data in the response.</param>
+    /// <returns>A SimpliWorkerResponse containing the worker's details.</returns>
+    /// <exception cref="SimpliBuildApiException">Thrown when there's an error retrieving the worker from the API.</exception>
+    /// <exception cref="SimpliBuildContentException">Thrown when the API response content is empty.</exception>
     public async Task<SimpliWorkerResponse> GetWorker(string id, bool includeSWMS)
     {
         await GetAuthTokenAsync();
@@ -246,18 +253,22 @@ public class SimpliClient
         request.AddQueryParameter("includeSWMS", includeSWMS.ToString());
 
         var result = await Client.ExecuteAsync(request);
-        if (result.IsSuccessful == false)
+        if (!result.IsSuccessful)
         {
             _logger.LogError($"Error getting worker from SimpliSWMS: {result.StatusDescription}");
-            throw new Exception("No worker received from SimpliSWMS");
+            throw new SimpliBuildApiException($"Error getting worker from SimpliSWMS: {result.StatusDescription}");
         }
 
-        if (result.Content == null)
-            throw new Exception("Content received from SimpliSWMS is empty");
+        if (string.IsNullOrEmpty(result.Content))
+        {
+            _logger.LogError("Content received from SimpliSWMS is empty");
+            throw new SimpliBuildContentException("Content received from SimpliSWMS is empty");
+        }
 
         var workersResponse = JsonSerializer.Deserialize<SimpliWorkerResponse>(result.Content);
-        return workersResponse!;
+        return workersResponse ?? throw new SimpliBuildContentException("Deserialization of worker response failed");
     }
+
 
     /// <summary>
     /// Performs an action on the worker
