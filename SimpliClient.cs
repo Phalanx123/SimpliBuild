@@ -244,7 +244,7 @@ public class SimpliClient
     /// <returns>A SimpliWorkerResponse containing the worker's details.</returns>
     /// <exception cref="SimpliBuildApiException">Thrown when there's an error retrieving the worker from the API.</exception>
     /// <exception cref="SimpliBuildContentException">Thrown when the API response content is empty.</exception>
-    public async Task<SimpliWorkerResponse> GetWorker(string id, bool includeSWMS)
+    public async Task<SimpliWorkerResponse> GetWorker(Guid id, bool includeSWMS)
     {
         await GetAuthTokenAsync();
 
@@ -279,7 +279,7 @@ public class SimpliClient
     /// <returns></returns>
     /// <exception cref="AccessViolationException">Issue with token</exception>
     /// <exception cref="ArgumentException">Action is invalid</exception>
-    public async Task<SimpliPerformActionOnSWMSWorkerResponse> PerformActionOnWorker(string swmsId, string workerId,
+    public async Task<SimpliPerformActionOnSWMSWorkerResponse> PerformActionOnWorker(string swmsId, Guid workerId,
         SWMSWorkerAction action)
     {
         await GetAuthTokenAsync();
@@ -443,7 +443,7 @@ public class SimpliClient
     //     return response!.Data.IsSuccessful;
     // }
     
-    public async Task<bool> InviteWorkerToSWMS(string swmsId,  string workerId, bool sendInvitation = false)
+    public async Task<bool> InviteWorkerToSWMS(string swmsId,  Guid workerId, bool sendInvitation = false)
     {
         await GetAuthTokenAsync();
         var request = new RestRequest($"swms/{swmsId}/invite/{workerId}", Method.Put);
