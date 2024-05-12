@@ -421,7 +421,7 @@ public class SimpliClient
         };
         var projectResponse = JsonSerializer.Deserialize<SimpliProjectResponse>(result.Content!, options);
 
-        if (projectResponse?.Project != null && projectResponse.Project.Id == null)
+        if (projectResponse?.Project is { Id: null })
             throw new Exception();
         return projectResponse;
     }
