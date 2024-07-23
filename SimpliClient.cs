@@ -112,6 +112,23 @@ public class SimpliClient
             });
         return request;
     }
+    
+    private RestRequest GenerateWorkerUpdateRequest(SimpliWorker simpliWorker, Guid id)
+    {
+        var request = new RestRequest($"workers/{id}", Method.Patch);
+        request.AddHeader("authorization", AccessToken!.AccessToken);
+        request.AddJsonBody(
+            new
+            {
+                email = simpliWorker.Email,
+                mobile = simpliWorker.Mobile,
+                employerBusinessName = simpliWorker.EmployerBusinessName,
+                firstName = simpliWorker.FirstName,
+                lastName = simpliWorker.LastName,
+                preferredLanguage = simpliWorker.PreferredLanguage
+            });
+        return request;
+    }
 
     private OneOf<SimpliWorkerCreatedResponse, ProblemDetails> ProcessWorkerCreationResult(RestResponse result)
     {
@@ -426,23 +443,6 @@ public class SimpliClient
         return projectResponse;
     }
 
-    // public async Task<bool> InviteWorkerToSWMS(string swmsId, Guid organisationId,  string workerId, bool sendInvitation = false)
-    // {
-    //     await GetAuthTokenAsync();
-    //     var request = new RestRequest($"swms/{swmsId}/invite/{workerId}", Method.Put);
-    //     request.AddHeader("authorization", AccessToken!.AccessToken);
-    //     request.AddHeader("X-Organisation-Id", organisationId);
-    //     request.AddQueryParameter(nameof(sendInvitation), sendInvitation);
-    //
-    //     //Adds the project
-    //     var result = await Client.ExecuteAsync(request);
-    //     //TODO {"error":{"status":400,"code":"40002","message":"Workers is unknown","field":"Workers"}}
-    //     var response = JsonSerializer.Deserialize<SimpliWorkerInvitedToSwmsResponse>(result.Content!);
-    //     if (response!.Error != null)
-    //         return false;
-    //     return response!.Data.IsSuccessful;
-    // }
-    
     public async Task<bool> InviteWorkerToSWMS(string swmsId,  Guid workerId, bool sendInvitation = false)
     {
         await GetAuthTokenAsync();
@@ -455,5 +455,21 @@ public class SimpliClient
         //TODO {"error":{"status":400,"code":"40002","message":"Workers is unknown","field":"Workers"}}
         var response = JsonSerializer.Deserialize<SimpliWorkerInvitedToSwmsResponse>(result.Content!);
         return response!.Data.IsSuccessful;
+    }
+
+    public async Task<bool> UpdateWorker(SimpliWorker sWorker, Guid workerId)
+    {
+        try
+        {
+            await GetAuthTokenAsync();
+            var request = GenerateWorkerUpdateRequest(sWorker, workerId);
+            var result = await Client.ExecuteAsync(request);
+            return ProcessWorkerCreationResult(result).IsT0;
+        }
+        catch (Exception ex)
+        {
+            
+                throw; // rethrow the original exception if request object is null
+        }
     }
 }
