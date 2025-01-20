@@ -436,8 +436,11 @@ public class SimpliClient
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             Converters = { new JsonStringEnumConverter() }
         };
+    
         var projectResponse = JsonSerializer.Deserialize<SimpliProjectResponse>(result.Content!, options);
-
+        
+        if (projectResponse?.Error is null ||  projectResponse.Error.Code == "40901")
+            return projectResponse;
         if (projectResponse?.Project is { Id: null })
             throw new Exception();
         return projectResponse;

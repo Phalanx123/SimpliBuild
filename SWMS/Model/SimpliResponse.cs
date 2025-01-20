@@ -6,19 +6,19 @@ namespace simpliBuild.SWMS.Model
     {
         [JsonPropertyName("requestId")] public string RequestId { get; set; }
 
-        [JsonPropertyName("error")] public SimpliError Error { get; set; }
+        [JsonPropertyName("error")] public SimpliError? Error { get; set; }
 
         [JsonPropertyName("content")] public string Content { get; set; }
     }
 
     public class SimpliProjectResponse : SimpliResponse
     {
-        [JsonPropertyName("data")] public SimpliProject Project { get; set; }
+        [JsonPropertyName("data")] public SimpliProject? Project { get; set; }
     }
 
     public class SimpliWorkerCreatedResponse : SimpliResponse
     {
-        [JsonPropertyName("data")] public SimpliWorker Worker { get; set; }
+        [JsonPropertyName("data")] public SimpliWorker? Worker { get; set; }
     }
     public class SimpliWorkerInvitedToSwmsResponse : SimpliResponse
     {
@@ -40,7 +40,7 @@ namespace simpliBuild.SWMS.Model
     public class SimpliError
     {
         [JsonPropertyName("status")]
-        public string Status { get; set; }
+        public int Status { get; set; }
 
         [JsonPropertyName("code")]
         public string Code { get; set; }
