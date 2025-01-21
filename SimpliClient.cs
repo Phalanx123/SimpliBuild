@@ -324,6 +324,57 @@ public class SimpliClient
     /// <summary>
     /// Gets a specific project
     /// </summary>
+    /// <param name="offset"></param>
+    /// <param name="limit"></param>
+    /// <param name="organisationId"></param>
+    /// <param name="keyword"></param>
+    /// <param name="attributes">A comma separated list of attributes to filter by using the above keyword parameter. One or more of “code”, “name”, “address1”, “suburb”, “state”, “postcode” or “country. By default, all listed attributes are filtered by the keyword with a logical OR.</param>
+    /// <returns></returns>
+    /// <exception cref="AccessViolationException">Issue with token</exception>
+    public async Task<OneOf<SimpliProjectsResponse, ProblemDetails>> GetProjects(Guid? organisationId,string? keyword, string? attributes, int offset = 0, int limit = 100)
+    {
+        var request = new RestRequest($"/projects/", Method.Get);
+        try
+        {
+            
+            await GetAuthTokenAsync();
+
+            request.AddHeader("authorization", AccessToken!.AccessToken);
+            if (!string.IsNullOrWhiteSpace(keyword))
+                request.AddQueryParameter(nameof(keyword), keyword);
+            if (!string.IsNullOrWhiteSpace(attributes))
+                request.AddQueryParameter(nameof(attributes), attributes);
+            request.AddQueryParameter("offset", offset.ToString());
+            request.AddQueryParameter("limit", limit.ToString());
+
+            if (organisationId != null)
+            {
+                request.AddHeader("X-Organisation-Id", organisationId.ToString()!);
+            }
+            
+            var result = await Client.ExecuteAsync(request);
+            
+
+            if (!result.IsSuccessful)
+            {
+                return GenerateServerErrorProblemDetails(request);
+            }
+   
+
+            var serialResult = JsonSerializer.Deserialize<SimpliProjectsResponse>(result.Content!);
+            
+            _logger.LogInformation($"Successfully retrieved project list.");
+            return serialResult!;
+        }
+        catch (Exception ex)
+        {
+            return GenerateExceptionProblemDetails(request, ex);
+        }
+    }
+    
+    /// <summary>
+    /// Gets a specific project
+    /// </summary>
     /// <param name="projectId">Project ID of project</param>
     /// <param name="organisationId"></param>
     /// <param name="includeSWMS"></param>
