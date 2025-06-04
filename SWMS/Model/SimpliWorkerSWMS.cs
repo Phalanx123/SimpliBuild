@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace simpliBuild.SWMS.Model
 {
-    public class SimpliWorkerSWMS
+    public class SimpliWorkerSWMS : SimpliWorker
     {
         /// <summary>
         /// SWMS

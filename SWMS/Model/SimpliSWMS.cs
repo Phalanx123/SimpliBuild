@@ -1,4 +1,6 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace simpliBuild.SWMS.Model
 {
@@ -33,6 +35,9 @@ namespace simpliBuild.SWMS.Model
         /// </summary>
         [JsonPropertyName("revision")]
         public int Revision { get; set; }
+        
+        [NotMapped]
+        public List<SimpliWorkerSWMS>? Workers { get; set; }
 
 
     }

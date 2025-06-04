@@ -4,7 +4,8 @@ namespace simpliBuild.SWMS.Model
 {
     public abstract class SimpliResponse
     {
-        [JsonPropertyName("requestId")] public string RequestId { get; set; }
+        [JsonPropertyName("requestId")] 
+        public string RequestId { get; set; }
 
         [JsonPropertyName("error")] public SimpliError? Error { get; set; }
 

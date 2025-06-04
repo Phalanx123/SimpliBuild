@@ -11,6 +11,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
+using simpliBuild.Configuration;
 using simpliBuild.Exceptions;
 using simpliBuild.SWMS.Model.Responses;
 using simpliBuild.Utils;
@@ -22,7 +24,7 @@ public class SimpliClient
 {
     private readonly string ApiKey;
     private readonly string ApiSecret;
-    private readonly string Api;
+    private readonly string BasicAuthHeader;
     private readonly ILogger _logger;
     public SimpliAccessToken? AccessToken;
     private static readonly SemaphoreSlim semaphore = new(1, 1);
@@ -30,13 +32,21 @@ public class SimpliClient
     public static RestClient Client { get; set; }
         = new RestClient(@"https://api-prod.simpliswms.com.au/swms-api/v1/");
 
-    public SimpliClient(string apiKey, string apiSecret, ILogger<SimpliClient> simpliClientLogger)
+    public SimpliClient(
+        IOptions<SimpliSWMSOptions> optionsAccessor,
+        ILogger<SimpliClient> simpliClientLogger)
     {
-        ApiKey = apiKey;
-        ApiSecret = apiSecret;
-        Api = "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(ApiKey + ":" + ApiSecret));
+        var options = optionsAccessor.Value;
+        ApiKey = options.ApiKey;
+        ApiSecret = options.ApiSecret;
+        BasicAuthHeader = "Basic " + Convert.ToBase64String(
+            Encoding.UTF8.GetBytes(ApiKey + ":" + ApiSecret));
         _logger = simpliClientLogger;
+
+        Client = new RestClient(options.BaseUrl);
+     //   Client.AddDefaultHeader("Authorization", BasicAuthHeader);
     }
+
 
     // Assuming SimpliBuildTokenRetrievalException and SimpliBuildTokenNullException
 // are defined in your Exceptions folder.
@@ -50,7 +60,7 @@ public class SimpliClient
             {
                 _logger.LogInformation("Access token is null or expired. Retrieving new token...");
 
-                var request = new RestRequest("/oauth/token", Method.Post).AddHeader("Authorization", Api);
+                var request = new RestRequest("/oauth/token", Method.Post).AddHeader("Authorization", BasicAuthHeader);
                 var result = await Client.ExecuteAsync<SimpliAccessToken>(request);
 
                 if (result.ErrorException != null)
