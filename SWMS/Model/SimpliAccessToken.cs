@@ -5,7 +5,6 @@ namespace simpliBuild.SWMS.Model
 {
     public class SimpliAccessToken
     {
-        private string _accessToken;
         private int _expires;
 
 
@@ -13,11 +12,7 @@ namespace simpliBuild.SWMS.Model
         /// Token
         /// </summary>
         [JsonPropertyName("access_token")]
-        public string AccessToken
-        {
-            get => "Bearer " + _accessToken;
-            set => _accessToken = value;
-        }
+        public string AccessToken { get; set; }
 
         /// <summary>
         /// The type of token

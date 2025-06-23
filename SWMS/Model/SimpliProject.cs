@@ -49,7 +49,7 @@ namespace simpliBuild.SWMS.Model
         /// Project Postcode
         /// </summary>
         [JsonPropertyName("postcode")]
-        public string? PostCode { get; set; }
+        public string? Postcode { get; set; }
 
         [JsonPropertyName("country")] 
         [JsonConverter(typeof(JsonStringEnumConverter))]

@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
+using SimpliBuild;
 using simpliBuild.Configuration;
 using simpliBuild.Interfaces;
 using simpliBuild.SWMS.Model;
@@ -51,10 +52,9 @@ private readonly SimpliClient _simpliClient;
     {
         // Build request URL: "swms/{id}/workers"
         var requestUri = $"swms/{swmsId}/workers";
-        await _simpliClient.GetAuthTokenAsync();
+  
 
         using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
-        request.Headers.Add("authorization", _simpliClient.AccessToken!.AccessToken);
         // If the caller provided an organisationId, include header
         if (organisationId.HasValue)
         {
