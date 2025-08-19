@@ -16,10 +16,10 @@ namespace simpliBuild.Services
 {
     public class TokenService : ITokenService
     {
-        readonly string _basicAuth;
-        readonly ILogger<TokenService> _logger;
-        static readonly SemaphoreSlim _semaphore = new(1,1);
-        SimpliAccessToken? _cachedToken;
+        private readonly string _basicAuth;
+        private readonly ILogger<TokenService> _logger;
+        private static readonly SemaphoreSlim _semaphore = new(1,1);
+        private SimpliAccessToken? _cachedToken;
 
         public TokenService(
             IOptions<SimpliSWMSOptions> opts,
