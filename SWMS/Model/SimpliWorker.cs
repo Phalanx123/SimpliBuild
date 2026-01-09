@@ -7,7 +7,7 @@ namespace simpliBuild.SWMS.Model
     public class SimpliWorker
     {
         [JsonPropertyName("id")]
-        public Guid? Id { get; set; }
+        public Guid Id { get; set; }
 
         [JsonPropertyName("firstName")]
         public string? FirstName { get; set; }
