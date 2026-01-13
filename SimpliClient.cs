@@ -45,41 +45,7 @@ public class SimpliClient
     }
     
 
-    public async Task<OneOf<SimpliWorkerCreatedResponse, RFC7807Result.ProblemDetails>> CreateWorker(
-        SimpliWorker simpliWorker)
-    {
-
-        var payload = new
-        {
-            email = simpliWorker.Email,
-            mobile = simpliWorker.Mobile,
-            employerBusinessName = simpliWorker.EmployerBusinessName,
-            firstName = simpliWorker.FirstName,
-            lastName = simpliWorker.LastName,
-            preferredLanguage = simpliWorker.PreferredLanguage
-        };
-
-        using var req = new HttpRequestMessage(HttpMethod.Post, "workers")
-        {
-            Content = JsonContent.Create(payload, options: _jsonOptions)
-        };
-
-        using var resp = await _httpClient.SendAsync(req);
-        var body = await resp.Content.ReadAsStringAsync();
-
-        if (resp.StatusCode == HttpStatusCode.Conflict)
-            return GenerateProblemDetails(req, HttpStatusCode.Conflict, "Conflict creating worker", body);
-
-        if (!resp.IsSuccessStatusCode)
-            return GenerateProblemDetails(req, HttpStatusCode.InternalServerError, "Error creating worker", body);
-
-        var result = JsonSerializer.Deserialize<SimpliWorkerCreatedResponse>(body, _jsonOptions);
-
-        if (result.Worker?.Id is null)
-            return GenerateProblemDetails(req, HttpStatusCode.InternalServerError, "Worker ID missing", body);
-
-        return result;
-    }
+   
 
     public async Task<OneOf<SimpliWorkerCreatedResponse, RFC7807Result.ProblemDetails>> UpdateWorker(
         SimpliWorker simpliWorker, Guid workerId)

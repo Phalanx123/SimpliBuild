@@ -1,12 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text;
+using System.Net.Http.Json;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
-using SimpliBuild;
 using simpliBuild.Configuration;
 using simpliBuild.Interfaces;
 using simpliBuild.SWMS.Model;
@@ -17,26 +17,20 @@ namespace simpliBuild;
 public class SimpliSWMSClient : ISimpliSWMSClient
 {
     private readonly HttpClient _httpClient;
-private readonly SimpliClient _simpliClient;
+
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
     };
-    
-    public SimpliSWMSClient(IOptions<SimpliSWMSOptions> options, HttpClient httpClient, SimpliClient simpliClient)
+
+    public SimpliSWMSClient(IOptions<SimpliSWMSOptions> options, HttpClient httpClient)
     {
         _httpClient = httpClient;
-        _simpliClient = simpliClient;
 
         // configure base address and required headers
         _httpClient.BaseAddress = new Uri(options.Value.BaseUrl);
         _httpClient.DefaultRequestHeaders.Accept.Add(
             new MediaTypeWithQualityHeaderValue("application/json"));
-        
-        // construct Basic Auth header from ApiKey and ApiSecret
-        var credentials = $"{options.Value.ApiKey}:{options.Value.ApiSecret}";
-        var base64Credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes(credentials));
-       
     }
 
     /// <summary>
@@ -52,7 +46,7 @@ private readonly SimpliClient _simpliClient;
     {
         // Build request URL: "swms/{id}/workers"
         var requestUri = $"swms/{swmsId}/workers";
-  
+
 
         using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
         // If the caller provided an organisationId, include header
@@ -60,10 +54,7 @@ private readonly SimpliClient _simpliClient;
         {
             request.Headers.Add("X-Organisation-Id", organisationId.Value.ToString());
         }
-
-        // Include Bearer token if your API uses OAuth2 (replace with actual token logic if needed)
-        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
+        
         var response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
 
@@ -78,6 +69,36 @@ private readonly SimpliClient _simpliClient;
             // In the unlikely case JSON is malformed
             throw new InvalidOperationException("Failed to deserialize SimpliSWMS response.");
         }
+
+        return result;
+    }
+
+    public async Task<SimpliWorkerCreatedResponse> CreateWorker(
+        CreateSimpliWorkerRequest simpliWorker, CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "workers");
+        req.Content = JsonContent.Create(simpliWorker, options: _jsonOptions);
+
+        using var resp = await _httpClient.SendAsync(req, ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+
+        if (resp.StatusCode == HttpStatusCode.Conflict)
+            throw new HttpRequestException(
+                $"Conflict creating worker. Response: {body}",
+                null,
+                resp.StatusCode);
+
+        if (!resp.IsSuccessStatusCode)
+            throw new HttpRequestException(
+                $"Error creating worker. Response: {body}",
+                null,
+                resp.StatusCode);
+
+        var result = JsonSerializer.Deserialize<SimpliWorkerCreatedResponse>(body, _jsonOptions)
+                     ?? throw new InvalidOperationException("Failed to deserialize response.");
+
+        if (result.Worker?.Id is null)
+            throw new InvalidOperationException("Worker ID missing in response.");
 
         return result;
     }
