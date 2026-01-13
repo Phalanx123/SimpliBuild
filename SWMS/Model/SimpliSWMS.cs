@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
@@ -10,7 +11,7 @@ namespace simpliBuild.SWMS.Model
         /// SWMS ID
         /// </summary>
         [JsonPropertyName("id")]
-        public string Id { get; set; }
+        public Guid Id { get; set; }
         /// <summary>
         /// Name of SWMS
         /// </summary>
