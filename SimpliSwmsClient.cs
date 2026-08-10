@@ -14,7 +14,7 @@ using simpliBuild.SWMS.Model.Responses;
 
 namespace simpliBuild;
 
-public class SimpliSWMSClient : ISimpliSWMSClient
+public class SimpliSwmsClient : ISimpliSWMSClient
 {
     private readonly HttpClient _httpClient;
 
@@ -23,7 +23,7 @@ public class SimpliSWMSClient : ISimpliSWMSClient
         PropertyNameCaseInsensitive = true
     };
 
-    public SimpliSWMSClient(IOptions<SimpliSWMSOptions> options, HttpClient httpClient)
+    public SimpliSwmsClient(IOptions<SimpliSWMSOptions> options, HttpClient httpClient)
     {
         _httpClient = httpClient;
 

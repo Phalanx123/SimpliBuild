@@ -14,12 +14,12 @@ using simpliBuild.Utils;
 
 namespace simpliBuild;
 
-public class SimpliSWMSProjectClient : ISimpliSWMSProjectClient
+public class SimpliSwmsProjectClient : ISimpliSWMSProjectClient
 {
     private readonly HttpClient _httpClient;
   private  readonly JsonSerializerOptions _jsonOptions;
-  private readonly ILogger<SimpliSWMSProjectClient> _logger;
-    public SimpliSWMSProjectClient(HttpClient httpClient, IOptions<JsonSerializerOptions> jsonOptions, ILogger<SimpliSWMSProjectClient> logger)
+  private readonly ILogger<SimpliSwmsProjectClient> _logger;
+    public SimpliSwmsProjectClient(HttpClient httpClient, IOptions<JsonSerializerOptions> jsonOptions, ILogger<SimpliSwmsProjectClient> logger)
     {
         _httpClient = httpClient;
         _logger = logger;

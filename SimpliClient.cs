@@ -1,17 +1,12 @@
-﻿// simpliBuild|Services|SimpliClient.cs
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OneOf;
 using simpliBuild.Configuration;
@@ -25,33 +20,24 @@ namespace SimpliBuild;
 public class SimpliClient
 {
     private readonly HttpClient _httpClient;
-    private readonly ILogger<SimpliClient> _logger;
     private readonly JsonSerializerOptions _jsonOptions;
 
-   
+
     public SimpliClient(
         HttpClient httpClient,
         IOptions<SimpliSWMSOptions> opts,
-        ILogger<SimpliClient> logger,
         IOptions<JsonSerializerOptions> jsonOptions
     )
     {
         _httpClient = httpClient;
-        _logger = logger;
         var o = opts.Value;
-      
-        _jsonOptions = jsonOptions.Value;
-      
-    }
-    
 
-   
+        _jsonOptions = jsonOptions.Value;
+    }
 
     public async Task<OneOf<SimpliWorkerCreatedResponse, RFC7807Result.ProblemDetails>> UpdateWorker(
         SimpliWorker simpliWorker, Guid workerId)
     {
-
-
         var payload = new
         {
             email = simpliWorker.Email,
@@ -62,10 +48,8 @@ public class SimpliClient
             preferredLanguage = simpliWorker.PreferredLanguage
         };
 
-        using var req = new HttpRequestMessage(HttpMethod.Patch, $"workers/{workerId}")
-        {
-            Content = JsonContent.Create(payload, options: _jsonOptions)
-        };
+        using var req = new HttpRequestMessage(HttpMethod.Patch, $"workers/{workerId}");
+        req.Content = JsonContent.Create(payload, options: _jsonOptions);
 
 
         using var resp = await _httpClient.SendAsync(req);
@@ -80,18 +64,16 @@ public class SimpliClient
     }
 
     public async Task<SimpliResponses.SimpliResponse> GetWorkers(
-        bool includeSWMS = false,
+        bool includeSwms = false,
         string? keyword = null,
         string[]? attributes = null,
         int offset = 0,
         int limit = 100
     )
     {
-
-
         var uri = QueryHelpers.AddQueryString("workers", new Dictionary<string, string?>
         {
-            ["includeSWMS"] = includeSWMS.ToString(),
+            ["includeSWMS"] = includeSwms.ToString(),
             ["keyword"] = keyword,
             ["attributes"] = attributes is null ? null : string.Join(",", attributes),
             ["offset"] = offset.ToString(),
@@ -99,7 +81,7 @@ public class SimpliClient
         });
 
         using var req = new HttpRequestMessage(HttpMethod.Get, uri);
-     
+
 
         using var resp = await _httpClient.SendAsync(req);
         resp.EnsureSuccessStatusCode();
@@ -108,13 +90,11 @@ public class SimpliClient
                ?? throw new SimpliBuildContentException("Failed to parse workers list");
     }
 
-    public async Task<SimpliWorkerResponse> GetWorker(Guid id, bool includeSWMS)
+    public async Task<SimpliWorkerResponse> GetWorker(Guid id, bool includeSwms)
     {
-
-
         var uri = QueryHelpers.AddQueryString($"workers/{id}", new Dictionary<string, string?>
         {
-            ["includeSWMS"] = includeSWMS.ToString()
+            ["includeSWMS"] = includeSwms.ToString()
         });
 
         using var req = new HttpRequestMessage(HttpMethod.Get, uri);
@@ -134,8 +114,6 @@ public class SimpliClient
         string swmsId, Guid workerId, SWMSWorkerAction action
     )
     {
-
-
         var act = action switch
         {
             SWMSWorkerAction.Activate => "activate",
@@ -158,8 +136,6 @@ public class SimpliClient
         Guid? organisationId, string? keyword, string? attributes, int offset = 0, int limit = 100
     )
     {
-
-
         var query = new Dictionary<string, string?>
         {
             ["keyword"] = keyword,
@@ -170,7 +146,7 @@ public class SimpliClient
         var uri = QueryHelpers.AddQueryString("projects", query);
 
         using var req = new HttpRequestMessage(HttpMethod.Get, uri);
-    
+
         if (organisationId != null)
             req.Headers.Add("X-Organisation-Id", organisationId.ToString());
 
@@ -181,25 +157,23 @@ public class SimpliClient
             return GenerateProblemDetails(req, HttpStatusCode.InternalServerError, "Error fetching projects", body);
 
         var result = JsonSerializer.Deserialize<SimpliProjectsResponse>(body, _jsonOptions);
-        
+
         return result;
     }
 
     public async Task<OneOf<SimpliProjectResponse, RFC7807Result.ProblemDetails>> GetProject(
-        Guid projectId, Guid organisationId, bool includeSWMS = false, bool includeArchived = false
+        Guid projectId, Guid organisationId, bool includeSwms = false, bool includeArchived = false
     )
     {
-
-
         var query = new Dictionary<string, string?>
         {
-            ["includeSWMS"] = includeSWMS.ToString(),
+            ["includeSWMS"] = includeSwms.ToString(),
             ["includeArchived"] = includeArchived.ToString()
         };
         var uri = QueryHelpers.AddQueryString($"projects/{projectId}", query);
 
         using var req = new HttpRequestMessage(HttpMethod.Get, uri);
- 
+
         req.Headers.Add("X-Organisation-Id", organisationId.ToString());
 
         using var resp = await _httpClient.SendAsync(req);
@@ -212,10 +186,10 @@ public class SimpliClient
             return GenerateProblemDetails(req, HttpStatusCode.InternalServerError, "Error fetching project", body);
 
         var result = JsonSerializer.Deserialize<SimpliProjectResponse>(body, _jsonOptions);
-        
+
         if (!includeArchived && result?.Project?.SWMS != null)
         {
-            result.Project.SWMS = 
+            result.Project.SWMS =
                 result.Project.SWMS
                     .Where(x => x.Status != "Archived")
                     .ToList();
@@ -226,26 +200,22 @@ public class SimpliClient
 
     public async Task<SimpliProjectResponse?> CreateProject(SimpliProject simpliProject, Guid organisationId)
     {
-
-
         var bodyDict = new Dictionary<string, object>
         {
             ["name"] = simpliProject.Name,
-            ["address1"] = simpliProject.Address1,
-            ["suburb"] = simpliProject.Suburb,
-            ["state"] = simpliProject.State.GetDescription(),
-            ["country"] = simpliProject.Country.GetDescription(),
-            ["postcode"] = simpliProject.Postcode
+            ["address1"] = simpliProject.Address1 ?? string.Empty,
+            ["suburb"] = simpliProject.Suburb ?? string.Empty,
+            ["state"] = simpliProject.State != null ? simpliProject.State.GetDescription() : string.Empty,
+            ["country"] = simpliProject.Country != null ? simpliProject.Country.GetDescription() : string.Empty,
+            ["postcode"] = simpliProject.Postcode ?? string.Empty
         };
         if (!string.IsNullOrWhiteSpace(simpliProject.Address2))
             bodyDict["address2"] = simpliProject.Address2;
         if (!string.IsNullOrWhiteSpace(simpliProject.Code))
             bodyDict["code"] = simpliProject.Code;
 
-        using var req = new HttpRequestMessage(HttpMethod.Post, "projects")
-        {
-            Content = JsonContent.Create(bodyDict, options: _jsonOptions)
-        };
+        using var req = new HttpRequestMessage(HttpMethod.Post, "projects");
+        req.Content = JsonContent.Create(bodyDict, options: _jsonOptions);
 
         req.Headers.Add("X-Organisation-Id", organisationId.ToString());
 
@@ -255,16 +225,16 @@ public class SimpliClient
         return await resp.Content.ReadFromJsonAsync<SimpliProjectResponse>(_jsonOptions);
     }
 
-    public async Task<bool> InviteWorkerToSWMS(string swmsId, Guid workerId, bool sendInvitation = false)
+    public async Task<bool> InviteWorkerToSwms(string swmsId, Guid workerId, bool sendInvitation = false)
     {
         var sendValue = WebUtility.UrlEncode(sendInvitation.ToString().ToLowerInvariant());
-        var swmsEscaped    = WebUtility.UrlEncode(swmsId);
-        var workerEscaped  = WebUtility.UrlEncode(workerId.ToString());
+        var swmsEscaped = WebUtility.UrlEncode(swmsId);
+        var workerEscaped = WebUtility.UrlEncode(workerId.ToString());
 
         var uri = $"swms/{swmsEscaped}/invite/{workerEscaped}?sendInvitation={sendValue}";
-        
+
         using var req = new HttpRequestMessage(HttpMethod.Put, uri);
-  
+
 
         using var resp = await _httpClient.SendAsync(req);
         resp.EnsureSuccessStatusCode();
@@ -278,7 +248,7 @@ public class SimpliClient
         HttpStatusCode status,
         string title,
         string detail
-    ) => new RFC7807Result.ProblemDetails
+    ) => new()
     {
         Type = new Uri("about:blank"),
         Title = title,

@@ -38,13 +38,13 @@ namespace SimpliBuild.DependencyInjection
                 })
                 .AddHttpMessageHandler<SimpliAuthHandler>();
             services.AddTransient<SimpliAuthHandler>();
-            services.AddHttpClient<ISimpliSWMSClient, SimpliSWMSClient>((sp, client) =>
+            services.AddHttpClient<ISimpliSWMSClient, SimpliSwmsClient>((sp, client) =>
                 {
                     var opts = sp.GetRequiredService<IOptions<SimpliSWMSOptions>>().Value;
                     client.BaseAddress = new Uri(opts.BaseUrl);
                 })
                 .AddHttpMessageHandler<SimpliAuthHandler>();
-            services.AddHttpClient<ISimpliSWMSProjectClient, SimpliSWMSProjectClient>((sp, client) =>
+            services.AddHttpClient<ISimpliSWMSProjectClient, SimpliSwmsProjectClient>((sp, client) =>
                 {
                     var opts = sp.GetRequiredService<IOptions<SimpliSWMSOptions>>().Value;
                     client.BaseAddress = new Uri(opts.BaseUrl);
