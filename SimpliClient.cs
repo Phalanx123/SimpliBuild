@@ -240,7 +240,13 @@ public class SimpliClient
         resp.EnsureSuccessStatusCode();
 
         var inviteResp = await resp.Content.ReadFromJsonAsync<SimpliWorkerInvitedToSwmsResponse>(_jsonOptions);
-        return inviteResp?.Data.IsSuccessful ?? false;
+
+        // SimpliSWMS returns HTTP 200 with data.isSuccess=false for requests it still processes and
+        // dispatches - e.g. inviting a worker who's already an existing participant still sends the
+        // notification. isSuccess doesn't reliably indicate the request failed, so the top-level
+        // error field is the real failure signal here, consistent with every other endpoint in this
+        // client (see PerformActionOnWorker).
+        return inviteResp is not null && inviteResp.Error is null;
     }
 
     private RFC7807Result.ProblemDetails GenerateProblemDetails(
