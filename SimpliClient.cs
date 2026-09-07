@@ -68,7 +68,8 @@ public class SimpliClient
         string? keyword = null,
         string[]? attributes = null,
         int offset = 0,
-        int limit = 100
+        int limit = 100,
+        Guid? organisationId = null
     )
     {
         var uri = QueryHelpers.AddQueryString("workers", new Dictionary<string, string?>
@@ -81,6 +82,8 @@ public class SimpliClient
         });
 
         using var req = new HttpRequestMessage(HttpMethod.Get, uri);
+        if (organisationId.HasValue)
+            req.Headers.Add("X-Organisation-Id", organisationId.Value.ToString());
 
 
         using var resp = await _httpClient.SendAsync(req);
@@ -90,7 +93,7 @@ public class SimpliClient
                ?? throw new SimpliBuildContentException("Failed to parse workers list");
     }
 
-    public async Task<SimpliWorkerResponse> GetWorker(Guid id, bool includeSwms)
+    public async Task<SimpliWorkerResponse> GetWorker(Guid id, bool includeSwms, Guid? organisationId = null)
     {
         var uri = QueryHelpers.AddQueryString($"workers/{id}", new Dictionary<string, string?>
         {
@@ -98,6 +101,8 @@ public class SimpliClient
         });
 
         using var req = new HttpRequestMessage(HttpMethod.Get, uri);
+        if (organisationId.HasValue)
+            req.Headers.Add("X-Organisation-Id", organisationId.Value.ToString());
 
 
         using var resp = await _httpClient.SendAsync(req);
@@ -111,7 +116,7 @@ public class SimpliClient
     }
 
     public async Task<SimpliPerformActionOnSWMSWorkerResponse> PerformActionOnWorker(
-        string swmsId, Guid workerId, SWMSWorkerAction action
+        string swmsId, Guid workerId, SWMSWorkerAction action, Guid? organisationId = null
     )
     {
         var act = action switch
@@ -124,6 +129,8 @@ public class SimpliClient
         var encodedAction = WebUtility.UrlEncode(act);
         var uri = $"swms/{swmsId}/{workerId}?action={encodedAction}";
         using var req = new HttpRequestMessage(HttpMethod.Post, uri);
+        if (organisationId.HasValue)
+            req.Headers.Add("X-Organisation-Id", organisationId.Value.ToString());
 
         using var resp = await _httpClient.SendAsync(req);
         resp.EnsureSuccessStatusCode();
@@ -225,7 +232,7 @@ public class SimpliClient
         return await resp.Content.ReadFromJsonAsync<SimpliProjectResponse>(_jsonOptions);
     }
 
-    public async Task<bool> InviteWorkerToSwms(string swmsId, Guid workerId, bool sendInvitation = false)
+    public async Task<bool> InviteWorkerToSwms(string swmsId, Guid workerId, bool sendInvitation = false, Guid? organisationId = null)
     {
         var sendValue = WebUtility.UrlEncode(sendInvitation.ToString().ToLowerInvariant());
         var swmsEscaped = WebUtility.UrlEncode(swmsId);
@@ -234,6 +241,8 @@ public class SimpliClient
         var uri = $"swms/{swmsEscaped}/invite/{workerEscaped}?sendInvitation={sendValue}";
 
         using var req = new HttpRequestMessage(HttpMethod.Put, uri);
+        if (organisationId.HasValue)
+            req.Headers.Add("X-Organisation-Id", organisationId.Value.ToString());
 
 
         using var resp = await _httpClient.SendAsync(req);
