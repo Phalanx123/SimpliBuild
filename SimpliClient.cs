@@ -240,10 +240,12 @@ public class SimpliClient
 
         var uri = $"swms/{swmsEscaped}/invite/{workerEscaped}?sendInvitation={sendValue}";
 
+        // Deliberately not scoped with X-Organisation-Id like the other endpoints here - SimpliSWMS
+        // 400s ("Workers is unknown") on this endpoint when the header's organisation doesn't match
+        // the one the worker/SWMS actually lives under, which happens whenever the caller only knows
+        // the destination job's business unit rather than the SWMS's actual one. Removed once before
+        // for the same reason (see git history) and re-added by mistake.
         using var req = new HttpRequestMessage(HttpMethod.Put, uri);
-        if (organisationId.HasValue)
-            req.Headers.Add("X-Organisation-Id", organisationId.Value.ToString());
-
 
         using var resp = await _httpClient.SendAsync(req);
         resp.EnsureSuccessStatusCode();
