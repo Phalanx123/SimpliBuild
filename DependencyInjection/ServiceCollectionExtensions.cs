@@ -38,16 +38,22 @@ namespace SimpliBuild.DependencyInjection
                 })
                 .AddHttpMessageHandler<SimpliAuthHandler>();
             services.AddTransient<SimpliAuthHandler>();
+            // Check-in runs the SWMS gate inline, and the mobile app gives up on a clock request after
+            // 20s (queuing it as offline). The default 100s HttpClient timeout would let a hung
+            // SimpliSWMS outlast that, so cap it well inside the phone's budget - a timeout here surfaces
+            // as a fail-open "SimpliSWMS unavailable" check-in instead of a phantom offline queue entry.
             services.AddHttpClient<ISimpliSWMSClient, SimpliSwmsClient>((sp, client) =>
                 {
                     var opts = sp.GetRequiredService<IOptions<SimpliSWMSOptions>>().Value;
                     client.BaseAddress = new Uri(opts.BaseUrl);
+                    client.Timeout = TimeSpan.FromSeconds(10);
                 })
                 .AddHttpMessageHandler<SimpliAuthHandler>();
             services.AddHttpClient<ISimpliSWMSProjectClient, SimpliSwmsProjectClient>((sp, client) =>
                 {
                     var opts = sp.GetRequiredService<IOptions<SimpliSWMSOptions>>().Value;
                     client.BaseAddress = new Uri(opts.BaseUrl);
+                    client.Timeout = TimeSpan.FromSeconds(10);
                 })
                 .AddHttpMessageHandler<SimpliAuthHandler>();
 
