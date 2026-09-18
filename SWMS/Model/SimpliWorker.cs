@@ -22,7 +22,7 @@ namespace simpliBuild.SWMS.Model
         public string? EmployerBusinessName { get; set; }
 
         [JsonPropertyName("preferredLanguage")]
-        public string PreferredLanguage { get; set; }
+        public string PreferredLanguage { get; set; } = string.Empty;
         
         [JsonPropertyName("mobile")]
         public string? Mobile { get; set; }

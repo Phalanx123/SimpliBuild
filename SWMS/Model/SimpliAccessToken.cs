@@ -12,13 +12,13 @@ namespace simpliBuild.SWMS.Model
         /// Token
         /// </summary>
         [JsonPropertyName("access_token")]
-        public string AccessToken { get; set; }
+        public string AccessToken { get; set; } = string.Empty;
 
         /// <summary>
         /// The type of token
         /// </summary>
         [JsonPropertyName("token_type")]
-        public string TokenType { get; set; }
+        public string TokenType { get; set; } = string.Empty;
 
 
         /// <summary>

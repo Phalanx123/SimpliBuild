@@ -5,7 +5,7 @@ namespace simpliBuild.SWMS.Model
     public abstract class SimpliResponse
     {
         [JsonPropertyName("requestId")] 
-        public string RequestId { get; set; }
+        public string RequestId { get; set; } = string.Empty;
 
         [JsonPropertyName("error")] public SimpliError? Error { get; set; }
 
@@ -44,13 +44,13 @@ namespace simpliBuild.SWMS.Model
         public int Status { get; set; }
 
         [JsonPropertyName("code")]
-        public string Code { get; set; }
+        public string Code { get; set; } = string.Empty;
 
         [JsonPropertyName("message")]
         public string Message { get; set; }
 
         [JsonPropertyName("details")]
-        public string Details { get; set; }
+        public string Details { get; set; } = string.Empty;
     }
 
     public class Data

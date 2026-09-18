@@ -21,7 +21,7 @@ namespace simpliBuild.SWMS.Model
         /// Simpli SWMS Code
         /// </summary>
         [JsonPropertyName("code")]
-        public string Code { get; set; }
+        public string Code { get; set; } = string.Empty;
         /// <summary>
         /// SWMS Status
         /// </summary>

@@ -10,6 +10,4 @@ public class SimpliWorkerResponse : SimpliResponse
     /// </summary>
     [JsonPropertyName("data")]
     public SimpliWorker? Worker { get; set; }
-
-    [JsonPropertyName("error")] public SimpliError? Error { get; set; }
 }

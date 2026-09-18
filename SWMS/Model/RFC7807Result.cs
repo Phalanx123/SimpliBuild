@@ -17,7 +17,7 @@ public class RFC7807Result
         public HttpStatusCode? Status { get; set; }
 
         [JsonPropertyName("detail")]
-        public string Detail { get; set; }
+        public string Detail { get; set; } = string.Empty;
 
         [JsonPropertyName("instance")]
         public Uri Instance { get; set; }
