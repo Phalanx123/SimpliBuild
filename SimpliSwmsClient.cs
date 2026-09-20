@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -6,6 +7,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using simpliBuild.Configuration;
 using simpliBuild.Interfaces;
@@ -71,6 +73,32 @@ public class SimpliSwmsClient : ISimpliSWMSClient
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Gets one page of the organisation's workers.
+    /// </summary>
+    public async Task<SimpliResponses.SimpliResponse> GetWorkersAsync(
+        int offset = 0,
+        int limit = 100,
+        Guid? organisationId = null,
+        CancellationToken ct = default)
+    {
+        var requestUri = QueryHelpers.AddQueryString("workers", new Dictionary<string, string?>
+        {
+            ["offset"] = offset.ToString(),
+            ["limit"] = limit.ToString()
+        });
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
+        if (organisationId.HasValue)
+            request.Headers.Add("X-Organisation-Id", organisationId.Value.ToString());
+
+        using var response = await _httpClient.SendAsync(request, ct);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<SimpliResponses.SimpliResponse>(_jsonOptions, ct)
+               ?? throw new InvalidOperationException("Failed to deserialize the SimpliSWMS worker list.");
     }
 
     public async Task<SimpliWorkerCreatedResponse> CreateWorker(
